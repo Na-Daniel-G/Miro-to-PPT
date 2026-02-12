@@ -1,5 +1,6 @@
 // craco.config.js
 const path = require("path");
+const webpack = require("webpack");
 require("dotenv").config();
 
 // Check if we're in development/preview mode (not production build)
@@ -59,6 +60,26 @@ const webpackConfig = {
             '**/coverage/**',
             '**/public/**',
         ],
+      };
+
+      // Handle node: protocol for pptxgenjs and similar libraries
+      webpackConfig.plugins.push(
+        new webpack.NormalModuleReplacementPlugin(/^node:/, (resource) => {
+          resource.request = resource.request.replace(/^node:/, '');
+        })
+      );
+
+      // Provide fallbacks for Node.js core modules
+      webpackConfig.resolve = {
+        ...webpackConfig.resolve,
+        fallback: {
+          ...webpackConfig.resolve?.fallback,
+          fs: false,
+          path: false,
+          stream: false,
+          crypto: false,
+          buffer: false,
+        },
       };
 
       // Add health check plugin to webpack if enabled
