@@ -280,24 +280,33 @@ def main():
     # Test 1: Root endpoint
     tester.test_root_endpoint()
 
-    # Test 2: Basic board data
+    # Test 2: NEW - Miro OAuth Status
+    miro_status_success, miro_status_data = tester.test_miro_status()
+
+    # Test 3: NEW - Miro OAuth Auth Redirect
+    tester.test_miro_auth_redirect()
+
+    # Test 4: NEW - Get Templates (including Professional)
+    templates_success, templates_data = tester.test_get_templates()
+
+    # Test 5: Basic board data
     success, board_data = tester.test_get_board_data()
     if not success:
         print("❌ Board data test failed - stopping tests")
         return 1
 
-    # Test 3: Mapped board data
+    # Test 6: Mapped board data
     success, mapped_data = tester.test_get_mapped_board()
     if not success:
         print("❌ Mapped board test failed - stopping tests")
         return 1
 
-    # Test 4: AI Summarization
+    # Test 7: AI Summarization
     success, summary_data = tester.test_ai_summarization()
     if not success:
         print("⚠️  AI Summarization failed - may be API key or connectivity issue")
         
-    # Test 5: Bulk summarization (optional)
+    # Test 8: Bulk summarization (optional)
     print("\n🔄 Testing bulk summarization (this may take longer)...")
     success, bulk_data = tester.test_summarize_all_frames()
     if not success:
