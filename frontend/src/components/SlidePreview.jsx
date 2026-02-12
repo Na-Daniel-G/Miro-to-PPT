@@ -180,32 +180,42 @@ export default function SlidePreview({ slides, template }) {
         {/* Large Preview */}
         <div className="lg:col-span-2">
           <Card className="overflow-hidden shadow-xl">
-            <div className="bg-gradient-to-br from-indigo-600 to-purple-700 p-4">
+            <div 
+              className="p-4"
+              style={{ backgroundColor: `#${slideTemplate.header_color}` }}
+            >
               <div className="flex items-center gap-2 text-white/80 text-sm">
                 <Presentation className="w-4 h-4" />
                 <span>Slide {activeSlide + 1}</span>
               </div>
-            </div>
-            <CardContent className="p-8 bg-white min-h-[400px]">
               <h2 
-                className="text-3xl font-bold text-slate-900 mb-8"
-                style={{ fontFamily: 'Manrope' }}
+                className="text-2xl font-bold mt-2"
+                style={{ color: `#${slideTemplate.title_color}`, fontFamily: 'Manrope' }}
               >
                 {currentSlide.slide.title}
               </h2>
+            </div>
+            <CardContent className="p-8 bg-white min-h-[350px]">
               <ul className="space-y-4">
                 {currentSlide.slide.bullets.map((bullet, i) => (
                   <li 
                     key={i} 
-                    className="flex items-start gap-4 text-lg text-slate-700"
+                    className="flex items-start gap-4 text-lg"
+                    style={{ color: `#${slideTemplate.bullet_color}` }}
                   >
-                    <span className="w-2 h-2 rounded-full bg-indigo-500 mt-3 flex-shrink-0" />
+                    <span 
+                      className="w-2 h-2 rounded-full mt-3 flex-shrink-0"
+                      style={{ backgroundColor: `#${slideTemplate.accent_color}` }}
+                    />
                     <span>{bullet}</span>
                   </li>
                 ))}
               </ul>
             </CardContent>
-            <div className="bg-indigo-600 h-2" />
+            <div 
+              className="h-2" 
+              style={{ backgroundColor: `#${slideTemplate.accent_color}` }}
+            />
           </Card>
           
           {/* Speaker Notes Section */}
