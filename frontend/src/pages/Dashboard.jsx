@@ -8,6 +8,13 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { 
   Sparkles, 
   Download, 
   Loader2, 
@@ -15,8 +22,12 @@ import {
   StickyNote,
   LayoutGrid,
   Eye,
-  ChevronRight,
-  Zap
+  Zap,
+  Link,
+  Unlink,
+  History,
+  Trash2,
+  ExternalLink
 } from "lucide-react";
 import MiroBoard from "@/components/MiroBoard";
 import SlidePreview from "@/components/SlidePreview";
@@ -24,6 +35,17 @@ import pptxgen from "pptxgenjs";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
+
+// Professional template configuration
+const PROFESSIONAL_TEMPLATE = {
+  name: "Professional",
+  header_color: "1E3A5F",
+  accent_color: "2563EB",
+  title_color: "FFFFFF",
+  body_color: "1F2937",
+  bullet_color: "4B5563",
+  background: "FFFFFF"
+};
 
 export default function Dashboard() {
   const [boardData, setBoardData] = useState(null);
@@ -34,10 +56,132 @@ export default function Dashboard() {
   const [progress, setProgress] = useState(0);
   const [activeTab, setActiveTab] = useState("board");
   const [selectedFrame, setSelectedFrame] = useState(null);
+  
+  // Miro OAuth state
+  const [miroStatus, setMiroStatus] = useState({ connected: false, configured: false });
+  const [miroBoards, setMiroBoards] = useState([]);
+  const [selectedMiroBoard, setSelectedMiroBoard] = useState(null);
+  const [loadingMiroBoards, setLoadingMiroBoards] = useState(false);
+  
+  // Export history state
+  const [exportHistory, setExportHistory] = useState([]);
 
   useEffect(() => {
+    // Load export history from localStorage
+    const savedHistory = localStorage.getItem("mirobridge_export_history");
+    if (savedHistory) {
+      setExportHistory(JSON.parse(savedHistory));
+    }
+    
+    // Check URL params for OAuth callback
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get("miro_connected") === "true") {
+      toast.success("Connected to Miro successfully!");
+      window.history.replaceState({}, "", "/");
+    }
+    if (urlParams.get("miro_error")) {
+      toast.error(`Miro connection failed: ${urlParams.get("miro_error")}`);
+      window.history.replaceState({}, "", "/");
+    }
+    
+    checkMiroStatus();
     fetchBoardData();
   }, []);
+
+  const checkMiroStatus = async () => {
+    try {
+      const response = await axios.get(`${API}/miro/status`);
+      setMiroStatus(response.data);
+      
+      if (response.data.connected) {
+        fetchMiroBoards();
+      }
+    } catch (error) {
+      console.error("Failed to check Miro status:", error);
+    }
+  };
+
+  const fetchMiroBoards = async () => {
+    setLoadingMiroBoards(true);
+    try {
+      const response = await axios.get(`${API}/miro/boards`);
+      setMiroBoards(response.data.data || []);
+    } catch (error) {
+      console.error("Failed to fetch Miro boards:", error);
+      if (error.response?.status === 401) {
+        setMiroStatus({ connected: false, configured: true });
+        toast.error("Miro session expired, please reconnect");
+      }
+    } finally {
+      setLoadingMiroBoards(false);
+    }
+  };
+
+  const connectMiro = () => {
+    window.location.href = `${API}/miro/auth`;
+  };
+
+  const disconnectMiro = async () => {
+    try {
+      await axios.post(`${API}/miro/disconnect`);
+      setMiroStatus({ connected: false, configured: true });
+      setMiroBoards([]);
+      setSelectedMiroBoard(null);
+      toast.success("Disconnected from Miro");
+    } catch (error) {
+      toast.error("Failed to disconnect");
+    }
+  };
+
+  const loadMiroBoard = async (boardId) => {
+    setIsLoading(true);
+    try {
+      const response = await axios.get(`${API}/miro/boards/${boardId}`);
+      const miroBoard = response.data;
+      
+      setBoardData(miroBoard);
+      
+      // Map notes to frames
+      const frameNotes = {};
+      miroBoard.frames.forEach(frame => {
+        frameNotes[frame.id] = [];
+      });
+      
+      miroBoard.sticky_notes.forEach(note => {
+        const noteCenterX = note.x + note.width / 2;
+        const noteCenterY = note.y + note.height / 2;
+        
+        for (const frame of miroBoard.frames) {
+          if (frame.x <= noteCenterX && noteCenterX <= frame.x + frame.width &&
+              frame.y <= noteCenterY && noteCenterY <= frame.y + frame.height) {
+            frameNotes[frame.id].push(note);
+            break;
+          }
+        }
+      });
+      
+      const framesWithNotes = miroBoard.frames.map(frame => ({
+        frame,
+        notes: frameNotes[frame.id] || [],
+        note_count: (frameNotes[frame.id] || []).length
+      }));
+      
+      setMappedData({
+        board_id: miroBoard.id,
+        board_name: miroBoard.name,
+        frames_with_notes: framesWithNotes
+      });
+      
+      setSelectedMiroBoard(boardId);
+      setGeneratedSlides([]);
+      toast.success(`Loaded board: ${miroBoard.name}`);
+    } catch (error) {
+      console.error("Failed to load Miro board:", error);
+      toast.error("Failed to load board from Miro");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const fetchBoardData = async () => {
     setIsLoading(true);
@@ -88,7 +232,6 @@ export default function Dashboard() {
             raw_notes: notes
           });
         } catch (err) {
-          // Fallback if AI fails
           slides.push({
             frame_id: frameData.frame.id,
             frame_title: frameData.frame.title,
@@ -116,6 +259,24 @@ export default function Dashboard() {
     }
   };
 
+  const saveExportHistory = (record) => {
+    const newHistory = [record, ...exportHistory].slice(0, 10); // Keep last 10
+    setExportHistory(newHistory);
+    localStorage.setItem("mirobridge_export_history", JSON.stringify(newHistory));
+  };
+
+  const clearExportHistory = () => {
+    setExportHistory([]);
+    localStorage.removeItem("mirobridge_export_history");
+    toast.success("Export history cleared");
+  };
+
+  const deleteHistoryItem = (id) => {
+    const newHistory = exportHistory.filter(item => item.id !== id);
+    setExportHistory(newHistory);
+    localStorage.setItem("mirobridge_export_history", JSON.stringify(newHistory));
+  };
+
   const exportToPowerPoint = async () => {
     if (generatedSlides.length === 0) {
       toast.error("No slides to export. Generate slides first.");
@@ -123,66 +284,99 @@ export default function Dashboard() {
     }
 
     try {
+      const template = PROFESSIONAL_TEMPLATE;
       const pptx = new pptxgen();
       pptx.author = "MiroBridge";
       pptx.title = boardData?.name || "Miro Board Export";
       pptx.subject = "AI-Generated Presentation from Miro";
       
-      // Define slide master with professional styling
+      // Define Professional slide master with dark blue header
       pptx.defineSlideMaster({
-        title: "MIROBRIDGE",
-        background: { color: "FFFFFF" },
+        title: "PROFESSIONAL",
+        background: { color: template.background },
         objects: [
-          { rect: { x: 0, y: "93%", w: "100%", h: "7%", fill: { color: "6366F1" } } },
-          { text: { text: "MiroBridge Export", options: { x: 0.5, y: "94%", w: 3, h: 0.4, fontSize: 10, color: "FFFFFF", fontFace: "Arial" } } }
+          // Dark blue header bar
+          { rect: { x: 0, y: 0, w: "100%", h: "15%", fill: { color: template.header_color } } },
+          // Bottom accent line
+          { rect: { x: 0, y: "95%", w: "100%", h: "5%", fill: { color: template.accent_color } } },
+          // Footer text
+          { text: { 
+            text: "MiroBridge Export", 
+            options: { 
+              x: 0.5, 
+              y: "96%", 
+              w: 3, 
+              h: 0.3, 
+              fontSize: 9, 
+              color: "FFFFFF", 
+              fontFace: "Arial" 
+            } 
+          }}
         ]
       });
 
       generatedSlides.forEach((slideData, index) => {
-        const slide = pptx.addSlide({ masterName: "MIROBRIDGE" });
+        const slide = pptx.addSlide({ masterName: "PROFESSIONAL" });
         
-        // Add title
+        // Add title in header area
         slide.addText(slideData.slide.title, {
           x: 0.5,
-          y: 0.5,
+          y: 0.3,
           w: 9,
-          h: 1,
-          fontSize: 32,
+          h: 0.8,
+          fontSize: 28,
           fontFace: "Arial",
-          color: "0F172A",
+          color: template.title_color,
           bold: true
         });
         
-        // Add bullets
+        // Add bullets in body area
         const bulletText = slideData.slide.bullets.map(bullet => ({
           text: bullet,
-          options: { bullet: true, fontSize: 18, color: "475569", breakLine: true }
+          options: { 
+            bullet: { type: "bullet", color: template.accent_color }, 
+            fontSize: 18, 
+            color: template.bullet_color, 
+            breakLine: true,
+            paraSpaceAfter: 12
+          }
         }));
         
         slide.addText(bulletText, {
           x: 0.5,
-          y: 1.7,
+          y: 1.5,
           w: 9,
           h: 4,
           fontFace: "Arial",
           valign: "top"
         });
         
-        // Add speaker notes with raw sticky note content
+        // Add speaker notes
         const speakerNotes = `Original Sticky Notes from "${slideData.frame_title}":\n\n${slideData.raw_notes.map((note, i) => `${i + 1}. ${note}`).join("\n")}`;
         slide.addNotes(speakerNotes);
       });
 
-      // Browser-safe: Download as blob (no node:fs needed)
+      // Browser-safe export
       const blob = await pptx.write({ outputType: "blob" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `${boardData?.name || "MiroBridge-Export"}.pptx`;
+      const fileName = `${boardData?.name || "MiroBridge-Export"}.pptx`;
+      a.download = fileName;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
+      
+      // Save to export history
+      const exportRecord = {
+        id: Date.now().toString(),
+        board_name: boardData?.name || "Untitled Board",
+        slide_count: generatedSlides.length,
+        template: "Professional",
+        exported_at: new Date().toISOString()
+      };
+      saveExportHistory(exportRecord);
       
       toast.success("PowerPoint exported successfully!");
     } catch (error) {
@@ -216,6 +410,33 @@ export default function Dashboard() {
             </div>
             
             <div className="flex items-center gap-3">
+              {/* Miro Connection Status */}
+              {miroStatus.configured && (
+                miroStatus.connected ? (
+                  <Button
+                    data-testid="disconnect-miro-btn"
+                    onClick={disconnectMiro}
+                    variant="outline"
+                    size="sm"
+                    className="gap-2 text-green-600 border-green-200 hover:bg-green-50"
+                  >
+                    <Link className="w-4 h-4" />
+                    Miro Connected
+                  </Button>
+                ) : (
+                  <Button
+                    data-testid="connect-miro-btn"
+                    onClick={connectMiro}
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                    Connect Miro
+                  </Button>
+                )
+              )}
+              
               <Button
                 data-testid="generate-slides-btn"
                 onClick={generateSlides}
@@ -260,6 +481,45 @@ export default function Dashboard() {
               </span>
               <Progress value={progress} className="flex-1 h-2" />
               <span className="text-sm font-mono text-indigo-600">{progress}%</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Miro Board Selector */}
+      {miroStatus.connected && miroBoards.length > 0 && (
+        <div className="bg-indigo-50 border-b border-indigo-100">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+            <div className="flex items-center gap-4">
+              <span className="text-sm font-medium text-indigo-700">
+                Select a Miro Board:
+              </span>
+              <Select 
+                value={selectedMiroBoard || ""} 
+                onValueChange={loadMiroBoard}
+              >
+                <SelectTrigger 
+                  data-testid="miro-board-select"
+                  className="w-64 bg-white"
+                >
+                  <SelectValue placeholder="Choose a board..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {miroBoards.map((board) => (
+                    <SelectItem key={board.id} value={board.id}>
+                      {board.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={fetchBoardData}
+                className="text-indigo-600"
+              >
+                Use Demo Board
+              </Button>
             </div>
           </div>
         </div>
@@ -333,6 +593,19 @@ export default function Dashboard() {
                   </Badge>
                 )}
               </TabsTrigger>
+              <TabsTrigger 
+                value="history" 
+                data-testid="tab-history"
+                className="data-[state=active]:bg-indigo-50 data-[state=active]:text-indigo-700 gap-2"
+              >
+                <History className="w-4 h-4" />
+                Export History
+                {exportHistory.length > 0 && (
+                  <Badge className="ml-1 bg-slate-500 text-white text-xs">
+                    {exportHistory.length}
+                  </Badge>
+                )}
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="board" className="space-y-6">
@@ -347,7 +620,7 @@ export default function Dashboard() {
 
             <TabsContent value="preview" className="space-y-6">
               {generatedSlides.length > 0 ? (
-                <SlidePreview slides={generatedSlides} />
+                <SlidePreview slides={generatedSlides} template={PROFESSIONAL_TEMPLATE} />
               ) : (
                 <Card className="border-dashed border-2 border-slate-200 bg-slate-50/50">
                   <CardContent className="flex flex-col items-center justify-center py-16">
@@ -369,6 +642,82 @@ export default function Dashboard() {
                       <Sparkles className="w-4 h-4" />
                       Generate Slides
                     </Button>
+                  </CardContent>
+                </Card>
+              )}
+            </TabsContent>
+
+            <TabsContent value="history" className="space-y-6">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h2 
+                    className="text-2xl font-bold text-slate-900"
+                    style={{ fontFamily: 'Manrope' }}
+                  >
+                    Export History
+                  </h2>
+                  <p className="text-slate-500 text-sm mt-1">
+                    Your recent PowerPoint exports (stored locally)
+                  </p>
+                </div>
+                {exportHistory.length > 0 && (
+                  <Button
+                    data-testid="clear-history-btn"
+                    variant="outline"
+                    size="sm"
+                    onClick={clearExportHistory}
+                    className="gap-2 text-red-600 border-red-200 hover:bg-red-50"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Clear All
+                  </Button>
+                )}
+              </div>
+              
+              {exportHistory.length > 0 ? (
+                <div className="grid gap-4">
+                  {exportHistory.map((record) => (
+                    <Card key={record.id} className="hover:shadow-md transition-shadow">
+                      <CardContent className="flex items-center justify-between py-4">
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 rounded-lg bg-indigo-100 flex items-center justify-center">
+                            <Presentation className="w-5 h-5 text-indigo-600" />
+                          </div>
+                          <div>
+                            <h4 className="font-semibold text-slate-900">{record.board_name}</h4>
+                            <div className="flex items-center gap-3 text-sm text-slate-500">
+                              <span>{record.slide_count} slides</span>
+                              <span>•</span>
+                              <span>{record.template} template</span>
+                              <span>•</span>
+                              <span>{new Date(record.exported_at).toLocaleDateString()}</span>
+                            </div>
+                          </div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => deleteHistoryItem(record.id)}
+                          className="text-slate-400 hover:text-red-500"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <Card className="border-dashed border-2 border-slate-200 bg-slate-50/50">
+                  <CardContent className="flex flex-col items-center justify-center py-16">
+                    <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mb-4">
+                      <History className="w-8 h-8 text-slate-400" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-slate-900 mb-2" style={{ fontFamily: 'Manrope' }}>
+                      No Export History
+                    </h3>
+                    <p className="text-slate-500 text-center max-w-md">
+                      Your exported presentations will appear here. Generate and export slides to see your history.
+                    </p>
                   </CardContent>
                 </Card>
               )}
