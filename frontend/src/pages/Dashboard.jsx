@@ -334,6 +334,7 @@ export default function Dashboard() {
 
       generatedSlides.forEach((slideData, index) => {
         const slide = pptx.addSlide({ masterName: "PROFESSIONAL" });
+        const isEmptyFrame = slideData.is_empty_frame || slideData.raw_notes?.length === 0;
         
         // Add title in header area
         slide.addText(slideData.slide.title, {
@@ -368,9 +369,13 @@ export default function Dashboard() {
           valign: "top"
         });
         
-        // Add speaker notes
-        const speakerNotes = `Original Sticky Notes from "${slideData.frame_title}":\n\n${slideData.raw_notes.map((note, i) => `${i + 1}. ${note}`).join("\n")}`;
-        slide.addNotes(speakerNotes);
+        // Add speaker notes (only if there are original notes)
+        if (!isEmptyFrame && slideData.raw_notes?.length > 0) {
+          const speakerNotes = `Original Sticky Notes from "${slideData.frame_title}":\n\n${slideData.raw_notes.map((note, i) => `${i + 1}. ${note}`).join("\n")}`;
+          slide.addNotes(speakerNotes);
+        } else {
+          slide.addNotes(`Frame: "${slideData.frame_title}" - No sticky notes in this frame.`);
+        }
       });
 
       // Browser-safe export
