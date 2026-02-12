@@ -657,7 +657,11 @@ export default function Dashboard() {
 
             <TabsContent value="preview" className="space-y-6">
               {generatedSlides.length > 0 ? (
-                <SlidePreview slides={generatedSlides} template={PROFESSIONAL_TEMPLATE} />
+                <SlidePreview 
+                  slides={generatedSlides} 
+                  template={PROFESSIONAL_TEMPLATE}
+                  onSlidesUpdate={setGeneratedSlides}
+                />
               ) : (
                 <Card className="border-dashed border-2 border-slate-200 bg-slate-50/50">
                   <CardContent className="flex flex-col items-center justify-center py-16">
