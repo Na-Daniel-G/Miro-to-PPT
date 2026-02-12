@@ -293,7 +293,7 @@ async def get_miro_board_data(board_id: str):
             cursor = None
             
             while True:
-                params = {"limit": 50}  # Max allowed by Miro
+                params = {"limit": 50}
                 if cursor:
                     params["cursor"] = cursor
                 
@@ -307,117 +307,125 @@ async def get_miro_board_data(board_id: str):
                 
                 all_items.extend(items_data.get("data", []))
                 
-                # Check for more pages
                 cursor = items_data.get("cursor")
                 if not cursor:
                     break
             
             logger.info(f"Fetched {len(all_items)} total items from board {board_id}")
             
-            # Parse frames and sticky notes
+            # First pass: collect frames and their positions
             frames = []
+            frame_map = {}  # id -> frame data with absolute position
+            
+            for item in all_items:
+                item_type = item.get("type")
+                if item_type == "frame":
+                    frame_id = item["id"]
+                    frame_x = item.get("position", {}).get("x", 0)
+                    frame_y = item.get("position", {}).get("y", 0)
+                    frame_width = item.get("geometry", {}).get("width", 600)
+                    frame_height = item.get("geometry", {}).get("height", 400)
+                    
+                    frame = Frame(
+                        id=frame_id,
+                        title=item.get("data", {}).get("title", "Untitled Frame"),
+                        x=frame_x,
+                        y=frame_y,
+                        width=frame_width,
+                        height=frame_height
+                    )
+                    frames.append(frame)
+                    frame_map[frame_id] = {
+                        "frame": frame,
+                        "x": frame_x,
+                        "y": frame_y,
+                        "width": frame_width,
+                        "height": frame_height
+                    }
+            
+            logger.info(f"Found {len(frames)} frames")
+            
+            # Second pass: collect content items and handle parent relationships
             sticky_notes = []
+            
+            def extract_content(item):
+                """Extract text content from various item types"""
+                item_type = item.get("type")
+                content = ""
+                
+                if item_type == "sticky_note":
+                    content = item.get("data", {}).get("content", "")
+                elif item_type == "text":
+                    content = item.get("data", {}).get("content", "")
+                elif item_type == "shape":
+                    content = item.get("data", {}).get("content", "")
+                elif item_type == "card":
+                    title = item.get("data", {}).get("title", "")
+                    desc = item.get("data", {}).get("description", "")
+                    content = f"{title}: {desc}" if title and desc else title or desc
+                
+                # Strip HTML tags
+                import re
+                return re.sub(r'<[^>]+>', '', content).strip()
+            
+            def get_color(item):
+                """Get color from item style"""
+                fill_color = item.get("style", {}).get("fillColor", "yellow")
+                color_map = {
+                    "light_yellow": "yellow", "yellow": "yellow",
+                    "light_blue": "blue", "blue": "blue",
+                    "light_green": "green", "green": "green",
+                    "light_pink": "pink", "pink": "pink",
+                    "violet": "pink", "cyan": "blue", "orange": "yellow",
+                    "gray": "yellow", "dark_blue": "blue",
+                    "dark_green": "green", "red": "pink"
+                }
+                return color_map.get(fill_color, "yellow")
             
             for item in all_items:
                 item_type = item.get("type")
                 
-                if item_type == "frame":
-                    frames.append(Frame(
-                        id=item["id"],
-                        title=item.get("data", {}).get("title", "Untitled Frame"),
-                        x=item.get("position", {}).get("x", 0),
-                        y=item.get("position", {}).get("y", 0),
-                        width=item.get("geometry", {}).get("width", 600),
-                        height=item.get("geometry", {}).get("height", 400)
-                    ))
-                elif item_type == "sticky_note":
-                    # Map Miro colors to our color scheme
-                    fill_color = item.get("style", {}).get("fillColor", "yellow")
-                    color_map = {
-                        "light_yellow": "yellow",
-                        "yellow": "yellow",
-                        "light_blue": "blue",
-                        "blue": "blue",
-                        "light_green": "green",
-                        "green": "green",
-                        "light_pink": "pink",
-                        "pink": "pink",
-                        "violet": "pink",
-                        "cyan": "blue",
-                        "orange": "yellow",
-                        "gray": "yellow",
-                        "dark_blue": "blue",
-                        "dark_green": "green",
-                        "dark_yellow": "yellow",
-                        "red": "pink"
-                    }
-                    color = color_map.get(fill_color, "yellow")
-                    
-                    # Get content - handle HTML content
-                    content = item.get("data", {}).get("content", "")
-                    # Strip HTML tags if present
-                    import re
-                    clean_content = re.sub(r'<[^>]+>', '', content).strip()
-                    
-                    sticky_notes.append(StickyNote(
-                        id=item["id"],
-                        text=clean_content if clean_content else "Empty note",
-                        x=item.get("position", {}).get("x", 0),
-                        y=item.get("position", {}).get("y", 0),
-                        width=item.get("geometry", {}).get("width", 150),
-                        height=item.get("geometry", {}).get("height", 100),
-                        color=color
-                    ))
-                elif item_type == "text":
-                    # Also include text items as "notes"
-                    content = item.get("data", {}).get("content", "")
-                    import re
-                    clean_content = re.sub(r'<[^>]+>', '', content).strip()
-                    
-                    if clean_content:
-                        sticky_notes.append(StickyNote(
-                            id=item["id"],
-                            text=clean_content,
-                            x=item.get("position", {}).get("x", 0),
-                            y=item.get("position", {}).get("y", 0),
-                            width=item.get("geometry", {}).get("width", 150),
-                            height=item.get("geometry", {}).get("height", 100),
-                            color="yellow"
-                        ))
-                elif item_type == "shape":
-                    # Include shapes with text content
-                    content = item.get("data", {}).get("content", "")
-                    import re
-                    clean_content = re.sub(r'<[^>]+>', '', content).strip()
-                    
-                    if clean_content:
-                        sticky_notes.append(StickyNote(
-                            id=item["id"],
-                            text=clean_content,
-                            x=item.get("position", {}).get("x", 0),
-                            y=item.get("position", {}).get("y", 0),
-                            width=item.get("geometry", {}).get("width", 150),
-                            height=item.get("geometry", {}).get("height", 100),
-                            color="blue"
-                        ))
-                elif item_type == "card":
-                    # Include cards
-                    title = item.get("data", {}).get("title", "")
-                    description = item.get("data", {}).get("description", "")
-                    content = f"{title}: {description}" if title and description else title or description
-                    
-                    if content:
-                        sticky_notes.append(StickyNote(
-                            id=item["id"],
-                            text=content.strip(),
-                            x=item.get("position", {}).get("x", 0),
-                            y=item.get("position", {}).get("y", 0),
-                            width=item.get("geometry", {}).get("width", 150),
-                            height=item.get("geometry", {}).get("height", 100),
-                            color="green"
-                        ))
+                # Skip frames and non-content items
+                if item_type in ["frame", "image", "document", "embed", "preview"]:
+                    continue
+                
+                content = extract_content(item)
+                if not content:
+                    continue
+                
+                # Get position - check if item has a parent (is inside a frame)
+                parent_id = item.get("parent", {}).get("id") if item.get("parent") else None
+                item_x = item.get("position", {}).get("x", 0)
+                item_y = item.get("position", {}).get("y", 0)
+                
+                # If item is inside a frame, its coordinates are RELATIVE to the frame
+                # Convert to absolute coordinates for mapping
+                if parent_id and parent_id in frame_map:
+                    parent_frame = frame_map[parent_id]
+                    # Item position is relative to frame center, convert to absolute
+                    abs_x = parent_frame["x"] + item_x
+                    abs_y = parent_frame["y"] + item_y
+                    logger.info(f"Item '{content[:30]}' is child of frame '{parent_frame['frame'].title}', relative pos ({item_x}, {item_y}), absolute ({abs_x}, {abs_y})")
+                else:
+                    abs_x = item_x
+                    abs_y = item_y
+                
+                sticky_notes.append(StickyNote(
+                    id=item["id"],
+                    text=content,
+                    x=abs_x,
+                    y=abs_y,
+                    width=item.get("geometry", {}).get("width", 150),
+                    height=item.get("geometry", {}).get("height", 100),
+                    color=get_color(item)
+                ))
+                logger.info(f"Added content item: '{content[:50]}' at ({abs_x}, {abs_y})")
             
             logger.info(f"Parsed {len(frames)} frames and {len(sticky_notes)} content items")
+            
+            # Debug: log frame boundaries
+            for frame in frames:
+                logger.info(f"Frame '{frame.title}': x={frame.x}, y={frame.y}, w={frame.width}, h={frame.height}")
             
             return MiroBoard(
                 id=board_id,
@@ -426,6 +434,7 @@ async def get_miro_board_data(board_id: str):
                 sticky_notes=sticky_notes
             )
     except httpx.HTTPStatusError as e:
+        logger.error(f"Miro API error: {e.response.status_code} - {e.response.text}")
         if e.response.status_code == 401:
             del token_store["default"]
             raise HTTPException(status_code=401, detail="Token expired, please reconnect")
