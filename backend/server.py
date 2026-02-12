@@ -288,20 +288,37 @@ async def get_miro_board_data(board_id: str):
             board_response.raise_for_status()
             board_info = board_response.json()
             
-            # Get all items
-            items_response = await http_client.get(
-                f"{MIRO_API_BASE}/boards/{board_id}/items",
-                headers={"Authorization": f"Bearer {access_token}"},
-                params={"limit": 50}
-            )
-            items_response.raise_for_status()
-            items_data = items_response.json()
+            # Fetch ALL items with pagination
+            all_items = []
+            cursor = None
+            
+            while True:
+                params = {"limit": 50}  # Max allowed by Miro
+                if cursor:
+                    params["cursor"] = cursor
+                
+                items_response = await http_client.get(
+                    f"{MIRO_API_BASE}/boards/{board_id}/items",
+                    headers={"Authorization": f"Bearer {access_token}"},
+                    params=params
+                )
+                items_response.raise_for_status()
+                items_data = items_response.json()
+                
+                all_items.extend(items_data.get("data", []))
+                
+                # Check for more pages
+                cursor = items_data.get("cursor")
+                if not cursor:
+                    break
+            
+            logger.info(f"Fetched {len(all_items)} total items from board {board_id}")
             
             # Parse frames and sticky notes
             frames = []
             sticky_notes = []
             
-            for item in items_data.get("data", []):
+            for item in all_items:
                 item_type = item.get("type")
                 
                 if item_type == "frame":
@@ -327,19 +344,80 @@ async def get_miro_board_data(board_id: str):
                         "pink": "pink",
                         "violet": "pink",
                         "cyan": "blue",
-                        "orange": "yellow"
+                        "orange": "yellow",
+                        "gray": "yellow",
+                        "dark_blue": "blue",
+                        "dark_green": "green",
+                        "dark_yellow": "yellow",
+                        "red": "pink"
                     }
                     color = color_map.get(fill_color, "yellow")
                     
+                    # Get content - handle HTML content
+                    content = item.get("data", {}).get("content", "")
+                    # Strip HTML tags if present
+                    import re
+                    clean_content = re.sub(r'<[^>]+>', '', content).strip()
+                    
                     sticky_notes.append(StickyNote(
                         id=item["id"],
-                        text=item.get("data", {}).get("content", ""),
+                        text=clean_content if clean_content else "Empty note",
                         x=item.get("position", {}).get("x", 0),
                         y=item.get("position", {}).get("y", 0),
                         width=item.get("geometry", {}).get("width", 150),
                         height=item.get("geometry", {}).get("height", 100),
                         color=color
                     ))
+                elif item_type == "text":
+                    # Also include text items as "notes"
+                    content = item.get("data", {}).get("content", "")
+                    import re
+                    clean_content = re.sub(r'<[^>]+>', '', content).strip()
+                    
+                    if clean_content:
+                        sticky_notes.append(StickyNote(
+                            id=item["id"],
+                            text=clean_content,
+                            x=item.get("position", {}).get("x", 0),
+                            y=item.get("position", {}).get("y", 0),
+                            width=item.get("geometry", {}).get("width", 150),
+                            height=item.get("geometry", {}).get("height", 100),
+                            color="yellow"
+                        ))
+                elif item_type == "shape":
+                    # Include shapes with text content
+                    content = item.get("data", {}).get("content", "")
+                    import re
+                    clean_content = re.sub(r'<[^>]+>', '', content).strip()
+                    
+                    if clean_content:
+                        sticky_notes.append(StickyNote(
+                            id=item["id"],
+                            text=clean_content,
+                            x=item.get("position", {}).get("x", 0),
+                            y=item.get("position", {}).get("y", 0),
+                            width=item.get("geometry", {}).get("width", 150),
+                            height=item.get("geometry", {}).get("height", 100),
+                            color="blue"
+                        ))
+                elif item_type == "card":
+                    # Include cards
+                    title = item.get("data", {}).get("title", "")
+                    description = item.get("data", {}).get("description", "")
+                    content = f"{title}: {description}" if title and description else title or description
+                    
+                    if content:
+                        sticky_notes.append(StickyNote(
+                            id=item["id"],
+                            text=content.strip(),
+                            x=item.get("position", {}).get("x", 0),
+                            y=item.get("position", {}).get("y", 0),
+                            width=item.get("geometry", {}).get("width", 150),
+                            height=item.get("geometry", {}).get("height", 100),
+                            color="green"
+                        ))
+            
+            logger.info(f"Parsed {len(frames)} frames and {len(sticky_notes)} content items")
             
             return MiroBoard(
                 id=board_id,
