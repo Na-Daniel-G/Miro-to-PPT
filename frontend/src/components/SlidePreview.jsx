@@ -291,29 +291,125 @@ export default function SlidePreview({ slides, template, onSlidesUpdate }) {
                   </Badge>
                 )}
               </div>
-              <h2 
-                className="text-2xl font-bold mt-2"
-                style={{ color: `#${slideTemplate.title_color}`, fontFamily: 'Manrope' }}
-              >
-                {currentSlide.slide.title}
-              </h2>
+              {/* Editable Title */}
+              {editingTitle ? (
+                <div className="flex items-center gap-2 mt-2">
+                  <Input
+                    data-testid="edit-title-input"
+                    value={editValue}
+                    onChange={(e) => setEditValue(e.target.value)}
+                    className="bg-white/20 border-white/30 text-white placeholder:text-white/50 text-xl font-bold"
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") saveTitle();
+                      if (e.key === "Escape") cancelEdit();
+                    }}
+                  />
+                  <Button size="icon" variant="ghost" onClick={saveTitle} className="text-white hover:bg-white/20">
+                    <Check className="w-5 h-5" />
+                  </Button>
+                  <Button size="icon" variant="ghost" onClick={cancelEdit} className="text-white hover:bg-white/20">
+                    <X className="w-5 h-5" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 mt-2 group">
+                  <h2 
+                    className="text-2xl font-bold flex-1"
+                    style={{ color: `#${slideTemplate.title_color}`, fontFamily: 'Manrope' }}
+                  >
+                    {currentSlide.slide.title}
+                  </h2>
+                  <Button 
+                    data-testid="edit-title-btn"
+                    size="icon" 
+                    variant="ghost" 
+                    onClick={startEditTitle}
+                    className="text-white/60 hover:text-white hover:bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </Button>
+                </div>
+              )}
             </div>
             <CardContent className="p-8 bg-white min-h-[350px]">
+              {/* Editable Bullets */}
               <ul className="space-y-4">
                 {currentSlide.slide.bullets.map((bullet, i) => (
                   <li 
                     key={i} 
-                    className="flex items-start gap-4 text-lg"
+                    className="flex items-start gap-4 text-lg group"
                     style={{ color: `#${slideTemplate.bullet_color}` }}
                   >
                     <span 
                       className="w-2 h-2 rounded-full mt-3 flex-shrink-0"
                       style={{ backgroundColor: `#${slideTemplate.accent_color}` }}
                     />
-                    <span>{bullet}</span>
+                    {editingBulletIndex === i ? (
+                      <div className="flex-1 flex items-center gap-2">
+                        <Textarea
+                          data-testid={`edit-bullet-input-${i}`}
+                          value={editValue}
+                          onChange={(e) => setEditValue(e.target.value)}
+                          className="flex-1 min-h-[60px] text-lg"
+                          autoFocus
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" && !e.shiftKey) {
+                              e.preventDefault();
+                              saveBullet();
+                            }
+                            if (e.key === "Escape") cancelEdit();
+                          }}
+                        />
+                        <div className="flex flex-col gap-1">
+                          <Button size="icon" variant="ghost" onClick={saveBullet} className="h-8 w-8">
+                            <Check className="w-4 h-4 text-green-600" />
+                          </Button>
+                          <Button size="icon" variant="ghost" onClick={cancelEdit} className="h-8 w-8">
+                            <X className="w-4 h-4 text-red-500" />
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <span className="flex-1">{bullet}</span>
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Button 
+                            data-testid={`edit-bullet-btn-${i}`}
+                            size="icon" 
+                            variant="ghost" 
+                            onClick={() => startEditBullet(i)}
+                            className="h-8 w-8"
+                          >
+                            <Pencil className="w-4 h-4 text-slate-400 hover:text-slate-600" />
+                          </Button>
+                          {currentSlide.slide.bullets.length > 1 && (
+                            <Button 
+                              data-testid={`delete-bullet-btn-${i}`}
+                              size="icon" 
+                              variant="ghost" 
+                              onClick={() => deleteBullet(i)}
+                              className="h-8 w-8"
+                            >
+                              <Trash2 className="w-4 h-4 text-slate-400 hover:text-red-500" />
+                            </Button>
+                          )}
+                        </div>
+                      </>
+                    )}
                   </li>
                 ))}
               </ul>
+              {/* Add Bullet Button */}
+              <Button
+                data-testid="add-bullet-btn"
+                variant="ghost"
+                onClick={addBullet}
+                className="mt-4 text-slate-400 hover:text-slate-600 gap-2"
+              >
+                <Plus className="w-4 h-4" />
+                Add bullet point
+              </Button>
             </CardContent>
             <div 
               className="h-2" 
