@@ -142,6 +142,7 @@ export default function SlidePreview({ slides, template }) {
   }
 
   const currentSlide = slides[activeSlide];
+  const isCurrentEmpty = currentSlide.is_empty_frame || currentSlide.raw_notes?.length === 0;
 
   return (
     <div className="space-y-6">
@@ -195,6 +196,11 @@ export default function SlidePreview({ slides, template }) {
               <div className="flex items-center gap-2 text-white/80 text-sm">
                 <Presentation className="w-4 h-4" />
                 <span>Slide {activeSlide + 1}</span>
+                {isCurrentEmpty && (
+                  <Badge className="bg-amber-500 text-white text-xs ml-2">
+                    Empty Frame
+                  </Badge>
+                )}
               </div>
               <h2 
                 className="text-2xl font-bold mt-2"
@@ -226,27 +232,29 @@ export default function SlidePreview({ slides, template }) {
             />
           </Card>
           
-          {/* Speaker Notes Section */}
-          <Card className="mt-4">
-            <CardContent className="p-4">
-              <h4 className="text-sm font-semibold text-slate-700 mb-2 flex items-center gap-2">
-                <StickyNote className="w-4 h-4" />
-                Speaker Notes
-              </h4>
-              <p className="text-xs text-slate-500 mb-2">
-                Original content from "{currentSlide.frame_title}":
-              </p>
-              <ScrollArea className="h-24">
-                <div className="space-y-1">
-                  {currentSlide.raw_notes.map((note, i) => (
-                    <p key={i} className="text-sm text-slate-600">
-                      {i + 1}. {note}
-                    </p>
-                  ))}
-                </div>
-              </ScrollArea>
-            </CardContent>
-          </Card>
+          {/* Speaker Notes Section - only show if there are notes */}
+          {!isCurrentEmpty && currentSlide.raw_notes?.length > 0 && (
+            <Card className="mt-4">
+              <CardContent className="p-4">
+                <h4 className="text-sm font-semibold text-slate-700 mb-2 flex items-center gap-2">
+                  <StickyNote className="w-4 h-4" />
+                  Speaker Notes
+                </h4>
+                <p className="text-xs text-slate-500 mb-2">
+                  Original content from "{currentSlide.frame_title}":
+                </p>
+                <ScrollArea className="h-24">
+                  <div className="space-y-1">
+                    {currentSlide.raw_notes.map((note, i) => (
+                      <p key={i} className="text-sm text-slate-600">
+                        {i + 1}. {note}
+                      </p>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         {/* Slide Thumbnails */}
