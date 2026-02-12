@@ -169,6 +169,102 @@ class MiroBridgeAPITester:
                 
         return success, response
 
+    def test_miro_status(self):
+        """Test GET /api/miro/status - Miro OAuth connection status"""
+        success, response = self.run_test("Miro OAuth Status", "GET", "miro/status", 200)
+        
+        if success:
+            # Validate structure
+            required_fields = ['connected', 'configured']
+            for field in required_fields:
+                if field not in response:
+                    print(f"❌ Missing field: {field}")
+                    return False, response
+            
+            print(f"   Connected: {response['connected']}")
+            print(f"   Configured: {response['configured']}")
+            
+            if response['configured']:
+                print("✅ Miro OAuth is properly configured")
+            else:
+                print("❌ Miro OAuth not configured - check MIRO_CLIENT_ID/SECRET")
+                
+        return success, response
+
+    def test_miro_auth_redirect(self):
+        """Test GET /api/miro/auth - OAuth redirect (expect redirect response)"""
+        # This should redirect, so we expect either 302 or 500 if not configured
+        url = f"{self.api_url}/miro/auth"
+        headers = {'Content-Type': 'application/json'}
+        
+        self.tests_run += 1
+        print(f"\n🔍 Testing Miro OAuth Redirect...")
+        print(f"   URL: {url}")
+        
+        try:
+            # Don't follow redirects to test the redirect response
+            response = requests.get(url, headers=headers, allow_redirects=False, timeout=10)
+            
+            if response.status_code in [302, 307]:
+                self.tests_passed += 1
+                print(f"✅ Passed - Got redirect: {response.status_code}")
+                location = response.headers.get('location', '')
+                if 'miro.com/oauth/authorize' in location:
+                    print("✅ Redirecting to Miro OAuth correctly")
+                else:
+                    print(f"⚠️  Redirect location: {location}")
+                return True, {'redirect_url': location}
+            elif response.status_code == 500:
+                print(f"❌ Failed - OAuth not configured properly: {response.status_code}")
+                return False, {}
+            else:
+                print(f"❌ Failed - Unexpected status: {response.status_code}")
+                return False, {}
+                
+        except Exception as e:
+            print(f"❌ Failed - Error: {str(e)}")
+            return False, {}
+
+    def test_get_templates(self):
+        """Test GET /api/templates - get available slide templates"""
+        success, response = self.run_test("Get Slide Templates", "GET", "templates", 200)
+        
+        if success:
+            # Validate structure
+            if 'templates' not in response:
+                print(f"❌ Missing templates field")
+                return False, response
+            
+            templates = response['templates']
+            print(f"   Available Templates: {len(templates)}")
+            
+            # Check if professional template exists
+            if 'professional' in templates:
+                prof_template = templates['professional']
+                required_fields = ['name', 'header_color', 'accent_color', 'title_color']
+                
+                print(f"   Professional Template Found:")
+                for field in required_fields:
+                    if field in prof_template:
+                        print(f"     {field}: {prof_template[field]}")
+                    else:
+                        print(f"❌ Professional template missing field: {field}")
+                        return False, response
+                        
+                # Check if it has dark blue header as specified
+                if prof_template.get('header_color') == '1E3A5F':
+                    print("✅ Professional template has correct dark blue header")
+                else:
+                    print(f"⚠️  Header color: {prof_template.get('header_color')}, expected: 1E3A5F")
+                    
+            else:
+                print("❌ Professional template not found")
+                return False, response
+                
+            print("✅ Templates endpoint working correctly")
+                
+        return success, response
+
 def main():
     # Setup
     tester = MiroBridgeAPITester()
