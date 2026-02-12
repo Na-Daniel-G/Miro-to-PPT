@@ -141,19 +141,30 @@ export default function Dashboard() {
       
       setBoardData(miroBoard);
       
-      // Map notes to frames
+      // Map notes to frames using coordinate overlap
+      // Frame positions are centers, so calculate bounds
       const frameNotes = {};
       miroBoard.frames.forEach(frame => {
         frameNotes[frame.id] = [];
       });
       
       miroBoard.sticky_notes.forEach(note => {
-        const noteCenterX = note.x + note.width / 2;
-        const noteCenterY = note.y + note.height / 2;
+        // Note position is its center
+        const noteX = note.x;
+        const noteY = note.y;
         
+        // Find which frame contains this note
         for (const frame of miroBoard.frames) {
-          if (frame.x <= noteCenterX && noteCenterX <= frame.x + frame.width &&
-              frame.y <= noteCenterY && noteCenterY <= frame.y + frame.height) {
+          // Frame position is center, calculate bounds
+          const frameLeft = frame.x - frame.width / 2;
+          const frameRight = frame.x + frame.width / 2;
+          const frameTop = frame.y - frame.height / 2;
+          const frameBottom = frame.y + frame.height / 2;
+          
+          // Check if note center is within frame bounds (with some tolerance)
+          const tolerance = 50; // pixels
+          if (noteX >= frameLeft - tolerance && noteX <= frameRight + tolerance &&
+              noteY >= frameTop - tolerance && noteY <= frameBottom + tolerance) {
             frameNotes[frame.id].push(note);
             break;
           }
@@ -166,6 +177,10 @@ export default function Dashboard() {
         note_count: (frameNotes[frame.id] || []).length
       }));
       
+      // Log for debugging
+      console.log("Frames with notes:", framesWithNotes);
+      console.log("Total sticky notes:", miroBoard.sticky_notes.length);
+      
       setMappedData({
         board_id: miroBoard.id,
         board_name: miroBoard.name,
@@ -174,7 +189,7 @@ export default function Dashboard() {
       
       setSelectedMiroBoard(boardId);
       setGeneratedSlides([]);
-      toast.success(`Loaded board: ${miroBoard.name}`);
+      toast.success(`Loaded board: ${miroBoard.name} (${miroBoard.sticky_notes.length} content items)`);
     } catch (error) {
       console.error("Failed to load Miro board:", error);
       toast.error("Failed to load board from Miro");
