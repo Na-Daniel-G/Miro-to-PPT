@@ -3,6 +3,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { 
   Collapsible, 
   CollapsibleContent, 
@@ -13,7 +15,12 @@ import {
   ChevronLeft, 
   ChevronRight,
   StickyNote,
-  Presentation
+  Presentation,
+  Pencil,
+  Check,
+  X,
+  Plus,
+  Trash2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
