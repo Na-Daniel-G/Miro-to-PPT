@@ -210,14 +210,29 @@ export default function Dashboard() {
     
     try {
       const frames = mappedData.frames_with_notes;
-      const totalFrames = frames.filter(f => f.note_count > 0).length;
+      const totalFrames = frames.length; // Include all frames, not just those with notes
       let completed = 0;
       const slides = [];
       
       for (const frameData of frames) {
-        if (frameData.note_count === 0) continue;
-        
         const notes = frameData.notes.map(n => n.text);
+        
+        // Handle frames without sticky notes
+        if (notes.length === 0) {
+          slides.push({
+            frame_id: frameData.frame.id,
+            frame_title: frameData.frame.title,
+            slide: {
+              title: frameData.frame.title,
+              bullets: ["Content to be added"]
+            },
+            raw_notes: [],
+            is_empty_frame: true
+          });
+          completed++;
+          setProgress(Math.round((completed / totalFrames) * 100));
+          continue;
+        }
         
         try {
           const response = await axios.post(`${API}/summarize`, {
@@ -229,7 +244,8 @@ export default function Dashboard() {
             frame_id: frameData.frame.id,
             frame_title: frameData.frame.title,
             slide: response.data,
-            raw_notes: notes
+            raw_notes: notes,
+            is_empty_frame: false
           });
         } catch (err) {
           slides.push({
@@ -239,7 +255,8 @@ export default function Dashboard() {
               title: frameData.frame.title,
               bullets: notes.slice(0, 5)
             },
-            raw_notes: notes
+            raw_notes: notes,
+            is_empty_frame: false
           });
         }
         
