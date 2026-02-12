@@ -173,8 +173,17 @@ export default function Dashboard() {
         slide.addNotes(speakerNotes);
       });
 
-      // Save the presentation
-      await pptx.writeFile({ fileName: `${boardData?.name || "MiroBridge-Export"}.pptx` });
+      // Browser-safe: Download as blob (no node:fs needed)
+      const blob = await pptx.write({ outputType: "blob" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${boardData?.name || "MiroBridge-Export"}.pptx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
       toast.success("PowerPoint exported successfully!");
     } catch (error) {
       console.error("Export error:", error);
