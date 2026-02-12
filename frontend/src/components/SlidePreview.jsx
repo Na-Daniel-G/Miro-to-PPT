@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 
 const SlideCard = ({ slideData, index, isActive, onClick }) => {
   const [showNotes, setShowNotes] = useState(false);
+  const isEmptyFrame = slideData.is_empty_frame || slideData.raw_notes?.length === 0;
 
   return (
     <div 
@@ -40,10 +41,15 @@ const SlideCard = ({ slideData, index, isActive, onClick }) => {
       >
         {/* Slide Preview */}
         <div className="slide-card relative bg-white border-b border-slate-100">
-          <div className="absolute top-3 left-3">
+          <div className="absolute top-3 left-3 flex gap-2">
             <Badge className="bg-indigo-500 text-white text-xs">
               Slide {index + 1}
             </Badge>
+            {isEmptyFrame && (
+              <Badge className="bg-amber-500 text-white text-xs">
+                Empty Frame
+              </Badge>
+            )}
           </div>
           <div className="p-6 pt-12">
             <h3 
@@ -68,45 +74,47 @@ const SlideCard = ({ slideData, index, isActive, onClick }) => {
           </div>
         </div>
 
-        {/* Speaker Notes Toggle */}
-        <Collapsible open={showNotes} onOpenChange={setShowNotes}>
-          <CollapsibleTrigger asChild>
-            <Button
-              data-testid={`speaker-notes-toggle-${index}`}
-              variant="ghost"
-              className="w-full justify-between px-4 py-3 h-auto text-sm text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-none"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <span className="flex items-center gap-2">
-                <StickyNote className="w-4 h-4" />
-                Speaker Notes ({slideData.raw_notes.length} original notes)
-              </span>
-              <ChevronDown className={cn(
-                "w-4 h-4 transition-transform duration-200",
-                showNotes && "rotate-180"
-              )} />
-            </Button>
-          </CollapsibleTrigger>
-          <CollapsibleContent>
-            <div className="px-4 pb-4 bg-slate-50 border-t border-slate-100">
-              <p className="text-xs text-slate-500 mb-2 pt-3">
-                Original sticky note content from "{slideData.frame_title}":
-              </p>
-              <ScrollArea className="h-32">
-                <ul className="space-y-1.5">
-                  {slideData.raw_notes.map((note, i) => (
-                    <li 
-                      key={i} 
-                      className="text-xs text-slate-600 bg-white p-2 rounded border border-slate-200"
-                    >
-                      {i + 1}. {note}
-                    </li>
-                  ))}
-                </ul>
-              </ScrollArea>
-            </div>
-          </CollapsibleContent>
-        </Collapsible>
+        {/* Speaker Notes Toggle - only show if there are notes */}
+        {!isEmptyFrame && (
+          <Collapsible open={showNotes} onOpenChange={setShowNotes}>
+            <CollapsibleTrigger asChild>
+              <Button
+                data-testid={`speaker-notes-toggle-${index}`}
+                variant="ghost"
+                className="w-full justify-between px-4 py-3 h-auto text-sm text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-none"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <span className="flex items-center gap-2">
+                  <StickyNote className="w-4 h-4" />
+                  Speaker Notes ({slideData.raw_notes.length} original notes)
+                </span>
+                <ChevronDown className={cn(
+                  "w-4 h-4 transition-transform duration-200",
+                  showNotes && "rotate-180"
+                )} />
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <div className="px-4 pb-4 bg-slate-50 border-t border-slate-100">
+                <p className="text-xs text-slate-500 mb-2 pt-3">
+                  Original sticky note content from "{slideData.frame_title}":
+                </p>
+                <ScrollArea className="h-32">
+                  <ul className="space-y-1.5">
+                    {slideData.raw_notes.map((note, i) => (
+                      <li 
+                        key={i} 
+                        className="text-xs text-slate-600 bg-white p-2 rounded border border-slate-200"
+                      >
+                        {i + 1}. {note}
+                      </li>
+                    ))}
+                  </ul>
+                </ScrollArea>
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
+        )}
       </Card>
     </div>
   );
