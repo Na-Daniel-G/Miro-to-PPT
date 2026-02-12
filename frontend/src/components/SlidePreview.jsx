@@ -127,8 +127,11 @@ const SlideCard = ({ slideData, index, isActive, onClick }) => {
   );
 };
 
-export default function SlidePreview({ slides, template }) {
+export default function SlidePreview({ slides, template, onSlidesUpdate }) {
   const [activeSlide, setActiveSlide] = useState(0);
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [editingBulletIndex, setEditingBulletIndex] = useState(null);
+  const [editValue, setEditValue] = useState("");
 
   // Default template if not provided
   const slideTemplate = template || {
@@ -150,6 +153,85 @@ export default function SlidePreview({ slides, template }) {
 
   const currentSlide = slides[activeSlide];
   const isCurrentEmpty = currentSlide.is_empty_frame || currentSlide.raw_notes?.length === 0;
+
+  // Edit handlers
+  const startEditTitle = () => {
+    setEditValue(currentSlide.slide.title);
+    setEditingTitle(true);
+  };
+
+  const saveTitle = () => {
+    if (onSlidesUpdate) {
+      const updatedSlides = [...slides];
+      updatedSlides[activeSlide] = {
+        ...updatedSlides[activeSlide],
+        slide: {
+          ...updatedSlides[activeSlide].slide,
+          title: editValue
+        }
+      };
+      onSlidesUpdate(updatedSlides);
+    }
+    setEditingTitle(false);
+  };
+
+  const startEditBullet = (index) => {
+    setEditValue(currentSlide.slide.bullets[index]);
+    setEditingBulletIndex(index);
+  };
+
+  const saveBullet = () => {
+    if (onSlidesUpdate && editingBulletIndex !== null) {
+      const updatedSlides = [...slides];
+      const newBullets = [...updatedSlides[activeSlide].slide.bullets];
+      newBullets[editingBulletIndex] = editValue;
+      updatedSlides[activeSlide] = {
+        ...updatedSlides[activeSlide],
+        slide: {
+          ...updatedSlides[activeSlide].slide,
+          bullets: newBullets
+        }
+      };
+      onSlidesUpdate(updatedSlides);
+    }
+    setEditingBulletIndex(null);
+  };
+
+  const addBullet = () => {
+    if (onSlidesUpdate) {
+      const updatedSlides = [...slides];
+      const newBullets = [...updatedSlides[activeSlide].slide.bullets, "New bullet point"];
+      updatedSlides[activeSlide] = {
+        ...updatedSlides[activeSlide],
+        slide: {
+          ...updatedSlides[activeSlide].slide,
+          bullets: newBullets
+        }
+      };
+      onSlidesUpdate(updatedSlides);
+    }
+  };
+
+  const deleteBullet = (index) => {
+    if (onSlidesUpdate && currentSlide.slide.bullets.length > 1) {
+      const updatedSlides = [...slides];
+      const newBullets = updatedSlides[activeSlide].slide.bullets.filter((_, i) => i !== index);
+      updatedSlides[activeSlide] = {
+        ...updatedSlides[activeSlide],
+        slide: {
+          ...updatedSlides[activeSlide].slide,
+          bullets: newBullets
+        }
+      };
+      onSlidesUpdate(updatedSlides);
+    }
+  };
+
+  const cancelEdit = () => {
+    setEditingTitle(false);
+    setEditingBulletIndex(null);
+    setEditValue("");
+  };
 
   return (
     <div className="space-y-6">
