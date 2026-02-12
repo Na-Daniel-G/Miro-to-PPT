@@ -112,8 +112,18 @@ const SlideCard = ({ slideData, index, isActive, onClick }) => {
   );
 };
 
-export default function SlidePreview({ slides }) {
+export default function SlidePreview({ slides, template }) {
   const [activeSlide, setActiveSlide] = useState(0);
+
+  // Default template if not provided
+  const slideTemplate = template || {
+    header_color: "1E3A5F",
+    accent_color: "2563EB",
+    title_color: "FFFFFF",
+    body_color: "1F2937",
+    bullet_color: "4B5563",
+    background: "FFFFFF"
+  };
 
   if (!slides || slides.length === 0) {
     return (
