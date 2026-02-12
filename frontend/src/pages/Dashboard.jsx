@@ -11,7 +11,7 @@ import {
   Sparkles, 
   Download, 
   Loader2, 
-  FilePresentation,
+  Presentation,
   StickyNote,
   LayoutGrid,
   Eye,
@@ -196,7 +196,7 @@ export default function Dashboard() {
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-                <FilePresentation className="w-5 h-5 text-white" />
+                <Presentation className="w-5 h-5 text-white" />
               </div>
               <div>
                 <h1 className="text-xl font-bold text-slate-900" style={{ fontFamily: 'Manrope' }}>
@@ -275,7 +275,7 @@ export default function Dashboard() {
               </div>
               {stats.slides > 0 && (
                 <div className="flex items-center gap-2">
-                  <FilePresentation className="w-4 h-4 text-indigo-500" />
+                  <Presentation className="w-4 h-4 text-indigo-500" />
                   <span className="text-sm text-slate-600">
                     <span className="font-semibold text-indigo-600">{stats.slides}</span> Slides Generated
                   </span>
