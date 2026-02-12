@@ -20,12 +20,30 @@ Build "MiroBridge" - a React-based logic handler that:
 - [x] Speaker notes with original content
 
 ## Implementation Status (Feb 12, 2026)
-### Completed
+
+### Phase 1 - MVP Complete
 - Backend: FastAPI with mock Miro data (4 frames, 17 notes)
 - Frontend: React dashboard with MiroBoard visualization
 - AI: Claude integration for summarization
 - Export: PPTX generation with slide master template
 - UI: Swiss-style professional design with Manrope/Inter fonts
+
+### Phase 2 - Feature Additions Complete
+- [x] **Real Miro OAuth Integration**
+  - OAuth 2.0 flow with authorization code exchange
+  - Board listing and selection
+  - Live frame/sticky note fetching
+  - Credentials: Client ID 3458764659315953203
+- [x] **Professional Slide Template**
+  - Dark blue header (#1E3A5F)
+  - Blue accent color (#2563EB)
+  - White title text
+  - Clean body styling
+- [x] **Export History (localStorage)**
+  - Last 10 exports saved locally
+  - Board name, slide count, template, date
+  - Clear all functionality
+  - Individual delete option
 
 ### Architecture
 ```
@@ -34,31 +52,42 @@ Backend (FastAPI):
 - GET /api/board/mapped - Coordinate-mapped data
 - POST /api/summarize - AI summarization endpoint
 - POST /api/summarize-all - Bulk processing
+- GET /api/templates - Slide templates
+- GET /api/miro/status - OAuth status
+- GET /api/miro/auth - OAuth redirect
+- GET /api/miro/callback - OAuth callback
+- GET /api/miro/boards - List user boards
+- GET /api/miro/boards/{id} - Get board data
 
 Frontend (React):
-- Dashboard.jsx - Main orchestration
+- Dashboard.jsx - Main orchestration + Miro OAuth + History
 - MiroBoard.jsx - Board visualization
-- SlidePreview.jsx - Generated slide display
+- SlidePreview.jsx - Generated slide display with Professional template
 - PptxGenJS - Client-side PPTX export
+- localStorage - Export history persistence
 ```
 
 ## Prioritized Backlog
+
 ### P0 (Critical) - DONE
 - [x] Core data flow working
 - [x] AI summarization functional
 - [x] PPTX export working
+- [x] Miro OAuth integration
+- [x] Professional template
+- [x] Export history
 
-### P1 (High)
-- [ ] Real Miro API integration
-- [ ] Custom slide templates
+### P1 (High) - Future
+- [ ] Multiple template selection UI
 - [ ] Batch export optimization
+- [ ] Persistent user sessions
 
-### P2 (Medium)
-- [ ] User settings for AI behavior
-- [ ] Multiple export formats (Google Slides, PDF)
-- [ ] Board selection UI
+### P2 (Medium) - Future
+- [ ] Google Slides export
+- [ ] PDF export option
+- [ ] Custom template designer
 
 ## Next Tasks
-1. Add real Miro OAuth integration
-2. Allow custom slide template selection
-3. Add export history/saved exports
+1. Add template selector dropdown for multiple templates
+2. Implement persistent Miro auth with refresh tokens
+3. Add team collaboration features
