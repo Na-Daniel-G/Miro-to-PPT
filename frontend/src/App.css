@@ -1,34 +1,79 @@
-.App-logo {
-    height: 40vmin;
-    pointer-events: none;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-    .App-logo {
-        animation: App-logo-spin infinite 20s linear;
-    }
-}
-
-.App-header {
-    background-color: #0f0f10;
+/* MiroBridge App Styles */
+.App {
     min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    font-size: calc(10px + 2vmin);
-    color: white;
 }
 
-.App-link {
-    color: #61dafb;
+/* Glass morphism header */
+.glass-header {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
 }
 
-@keyframes App-logo-spin {
-    from {
-        transform: rotate(0deg);
-    }
-    to {
-        transform: rotate(360deg);
-    }
+/* Sticky note colors */
+.sticky-yellow {
+    background-color: #FEF08A;
+    color: #713F12;
+}
+
+.sticky-blue {
+    background-color: #BFDBFE;
+    color: #1E3A8A;
+}
+
+.sticky-green {
+    background-color: #BBF7D0;
+    color: #14532D;
+}
+
+.sticky-pink {
+    background-color: #FBCFE8;
+    color: #831843;
+}
+
+/* Frame styling */
+.miro-frame {
+    border: 2px dashed #E2E8F0;
+    background: rgba(248, 250, 252, 0.5);
+    border-radius: 8px;
+}
+
+/* Slide preview card */
+.slide-card {
+    aspect-ratio: 16 / 9;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* Button hover effects */
+.btn-magic {
+    background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 50%, #EC4899 100%);
+    background-size: 200% 200%;
+    transition: all 0.3s ease;
+}
+
+.btn-magic:hover {
+    background-position: 100% 100%;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(99, 102, 241, 0.35);
+}
+
+/* Loading dots animation */
+@keyframes loadingDot {
+    0%, 80%, 100% { transform: scale(0); }
+    40% { transform: scale(1); }
+}
+
+.loading-dot {
+    animation: loadingDot 1.4s infinite ease-in-out both;
+}
+
+.loading-dot:nth-child(1) { animation-delay: -0.32s; }
+.loading-dot:nth-child(2) { animation-delay: -0.16s; }
+.loading-dot:nth-child(3) { animation-delay: 0; }
+
+/* Smooth transitions */
+.transition-smooth {
+    transition: all 0.2s ease-in-out;
 }
