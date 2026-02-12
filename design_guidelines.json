@@ -1,0 +1,167 @@
+{
+  "identity": {
+    "name": "MiroBridge",
+    "persona": "The Architect of Clarity",
+    "tone": "Professional, Efficient, Intelligent, Crisp",
+    "aesthetic": "Swiss International Style meets Modern SaaS"
+  },
+  "typography": {
+    "primary_font": "Inter",
+    "secondary_font": "Manrope",
+    "mono_font": "JetBrains Mono",
+    "font_weights": {
+      "light": 300,
+      "regular": 400,
+      "medium": 500,
+      "semibold": 600,
+      "bold": 700
+    },
+    "scale": {
+      "h1": "text-4xl md:text-5xl font-bold tracking-tight",
+      "h2": "text-3xl font-semibold tracking-tight",
+      "h3": "text-2xl font-semibold tracking-tight",
+      "h4": "text-xl font-medium",
+      "body": "text-base leading-relaxed text-slate-600",
+      "small": "text-sm text-slate-500",
+      "caption": "text-xs text-slate-400 uppercase tracking-wider"
+    },
+    "rules": [
+      "Use Manrope for Headings (h1-h3)",
+      "Use Inter for Body text and UI elements",
+      "Use JetBrains Mono for data values, IDs, or code snippets"
+    ]
+  },
+  "colors": {
+    "theme": "light",
+    "palette": {
+      "background": {
+        "primary": "#FFFFFF",
+        "secondary": "#F8FAFC",
+        "tertiary": "#F1F5F9"
+      },
+      "foreground": {
+        "primary": "#0F172A",
+        "secondary": "#475569",
+        "muted": "#94A3B8"
+      },
+      "brand": {
+        "primary": "#6366F1",
+        "hover": "#4F46E5",
+        "light": "#E0E7FF"
+      },
+      "accent": {
+        "yellow": "#FEF08A",
+        "blue": "#BFDBFE",
+        "green": "#BBF7D0",
+        "pink": "#FBCFE8"
+      },
+      "border": {
+        "default": "#E2E8F0",
+        "active": "#CBD5E1"
+      },
+      "status": {
+        "success": "#10B981",
+        "error": "#EF4444",
+        "warning": "#F59E0B",
+        "info": "#3B82F6"
+      }
+    },
+    "gradients": {
+      "magic": "bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500",
+      "subtle": "bg-gradient-to-b from-slate-50 to-white"
+    }
+  },
+  "layout": {
+    "container": "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8",
+    "grid_system": "grid grid-cols-1 md:grid-cols-12 gap-6",
+    "spacing": {
+      "section_gap": "py-12 md:py-20",
+      "element_gap": "gap-4"
+    },
+    "border_radius": {
+      "sm": "rounded-sm",
+      "md": "rounded-md",
+      "lg": "rounded-lg",
+      "xl": "rounded-xl",
+      "full": "rounded-full"
+    },
+    "shadows": {
+      "card": "shadow-[0_2px_8px_rgba(0,0,0,0.04)]",
+      "hover": "shadow-[0_8px_24px_rgba(0,0,0,0.08)]",
+      "float": "shadow-[0_12px_48px_rgba(0,0,0,0.12)]"
+    }
+  },
+  "components": {
+    "Button": {
+      "default": "inline-flex items-center justify-center rounded-lg text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50",
+      "primary": "bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm",
+      "secondary": "bg-white text-slate-900 border border-slate-200 hover:bg-slate-50 shadow-sm",
+      "ghost": "hover:bg-slate-100 hover:text-slate-900",
+      "size_default": "h-10 px-4 py-2",
+      "size_sm": "h-9 rounded-md px-3",
+      "size_lg": "h-11 rounded-md px-8"
+    },
+    "Card": {
+      "base": "rounded-xl border border-slate-200 bg-white text-slate-950 shadow-[0_2px_4px_rgba(0,0,0,0.02)]",
+      "header": "flex flex-col space-y-1.5 p-6",
+      "content": "p-6 pt-0",
+      "footer": "flex items-center p-6 pt-0"
+    },
+    "StickyNote": {
+      "base": "aspect-square p-4 shadow-sm rotate-1 hover:rotate-0 transition-transform duration-200 cursor-default flex flex-col justify-center items-center text-center",
+      "yellow": "bg-yellow-200 text-yellow-900",
+      "blue": "bg-blue-200 text-blue-900",
+      "green": "bg-green-200 text-green-900",
+      "pink": "bg-pink-200 text-pink-900"
+    },
+    "Frame": {
+      "base": "border-2 border-dashed border-slate-200 bg-slate-50/50 rounded-lg p-4 relative"
+    }
+  },
+  "motion": {
+    "transitions": {
+      "default": "transition-all duration-200 ease-in-out",
+      "slow": "transition-all duration-500 ease-in-out"
+    },
+    "animations": {
+      "fadeIn": "animate-in fade-in zoom-in-95 duration-300",
+      "slideUp": "animate-in slide-in-from-bottom-4 duration-500"
+    }
+  },
+  "accessibility": {
+    "contrast_check": "Ensure text over colored backgrounds meets WCAG AA (4.5:1).",
+    "focus_states": "All interactive elements must have visible focus rings.",
+    "aria_labels": "Buttons with icons only must have aria-label.",
+    "reduced_motion": "Respect prefers-reduced-motion media query."
+  },
+  "assets": {
+    "icons": "Use 'lucide-react' for all UI icons. Use thin strokes (1.5px) for elegance.",
+    "images": {
+      "hero_bg": "Abstract geometric shapes or a subtle mesh gradient. NO stock photos of people shaking hands.",
+      "empty_state": "Minimalist line art illustration or a simple icon grouping."
+    }
+  },
+  "instructions_to_main_agent": [
+    "Use 'Manrope' for all headings and 'Inter' for body text. Add these fonts via Google Fonts in index.html.",
+    "Create a 'MiroBoard' component that visually represents the frames and sticky notes using CSS grid and absolute positioning where appropriate, or a flex wrap layout.",
+    "Implement the 'StickyNote' component with random slight rotations (-1deg to 1deg) to feel organic.",
+    "The 'Generate' button should trigger a visible state change (loading spinner + text update).",
+    "Display the generated slides in a 'Carousel' or 'Grid' view before export.",
+    "Ensure the 'Speaker Notes' are accessible via a toggle or a detail view in the slide preview.",
+    "Use 'sonner' for all notifications (success/error).",
+    "Add 'data-testid' to all interactive elements (buttons, inputs, cards) for testing.",
+    "Do NOT use gradients for text. Keep text high-contrast solid colors.",
+    "The Preview area should feel distinct from the Input area—use a subtle background color change (e.g., white vs slate-50).",
+    "Strictly follow the color palette. Do not introduce new colors."
+  ],
+  "universal_guidelines": [
+    "Do not use generic centered layouts. Use asymmetry where possible.",
+    "Create depth through layered design elements.",
+    "Use glass-morphism effects with backdrop filters for floating controls.",
+    "Every interaction needs micro-animations.",
+    "Use generous spacing (p-6, p-8) to avoid clutter.",
+    "Prioritize reusing Shadcn components from /components/ui.",
+    "Ensure all components use named exports.",
+    "Never use transparent backgrounds on headers without a blur."
+  ]
+}
