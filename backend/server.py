@@ -448,7 +448,7 @@ Respond ONLY with valid JSON, no markdown or extra text."""
 
 @api_router.post("/summarize-all")
 async def summarize_all_frames():
-    """Summarize all frames in the board"""
+    """Summarize all frames in the board (including empty frames)"""
     api_key = os.environ.get('EMERGENT_LLM_KEY')
     if not api_key:
         raise HTTPException(status_code=500, detail="EMERGENT_LLM_KEY not configured")
@@ -458,10 +458,21 @@ async def summarize_all_frames():
     results = []
     for frame in MOCK_MIRO_BOARD.frames:
         notes = frame_notes.get(frame.id, [])
-        if not notes:
+        notes_text = [note.text for note in notes] if notes else []
+        
+        # Handle frames with no sticky notes
+        if not notes_text:
+            results.append({
+                "frame_id": frame.id,
+                "frame_title": frame.title,
+                "slide": {
+                    "title": frame.title,
+                    "bullets": ["Content to be added"]
+                },
+                "raw_notes": [],
+                "is_empty_frame": True
+            })
             continue
-            
-        notes_text = [note.text for note in notes]
         
         try:
             request = SummarizeRequest(notes=notes_text, frame_title=frame.title)
@@ -471,7 +482,8 @@ async def summarize_all_frames():
                 "frame_id": frame.id,
                 "frame_title": frame.title,
                 "slide": slide_content.model_dump(),
-                "raw_notes": notes_text
+                "raw_notes": notes_text,
+                "is_empty_frame": False
             })
         except Exception as e:
             logger.error(f"Error summarizing frame {frame.id}: {str(e)}")
@@ -479,7 +491,8 @@ async def summarize_all_frames():
                 "frame_id": frame.id,
                 "frame_title": frame.title,
                 "slide": {"title": frame.title, "bullets": notes_text[:5]},
-                "raw_notes": notes_text
+                "raw_notes": notes_text,
+                "is_empty_frame": False
             })
     
     return {
