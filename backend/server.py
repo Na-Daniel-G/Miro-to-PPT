@@ -10,17 +10,31 @@ from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional, Dict, Any
 import uuid
 from datetime import datetime, timezone
-from emergentintegrations.llm.chat import LlmChat, UserMessage
 import httpx
 import json
+from anthropic import AsyncAnthropic
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
-# MongoDB connection
-mongo_url = os.environ['MONGO_URL']
-client = AsyncIOMotorClient(mongo_url)
-db = client[os.environ['DB_NAME']]
+# MongoDB connection (optional)
+mongo_url = os.environ.get('MONGO_URL')
+if mongo_url:
+    try:
+        client = AsyncIOMotorClient(mongo_url)
+        db = client[os.environ.get('DB_NAME', 'mirobridge')]
+        logger = logging.getLogger(__name__)
+        logger.info("MongoDB connected successfully")
+    except Exception as e:
+        logger = logging.getLogger(__name__)
+        logger.warning(f"MongoDB connection failed: {e}. Continuing without database.")
+        client = None
+        db = None
+else:
+    logger = logging.getLogger(__name__)
+    logger.info("MONGO_URL not set. Running without database.")
+    client = None
+    db = None
 
 # Create the main app without a prefix
 app = FastAPI()
@@ -509,9 +523,9 @@ async def get_templates():
 @api_router.post("/summarize", response_model=SlideContent)
 async def summarize_frame_content(request: SummarizeRequest):
     """Use AI to summarize sticky note content into premium editorial slide format"""
-    api_key = os.environ.get('EMERGENT_LLM_KEY')
+    api_key = os.environ.get('ANTHROPIC_API_KEY')
     if not api_key:
-        raise HTTPException(status_code=500, detail="EMERGENT_LLM_KEY not configured")
+        raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY not configured")
     
     notes_text = "\n".join([f"- {note}" for note in request.notes])
     
@@ -535,17 +549,22 @@ Requirements:
 Respond ONLY with valid JSON, no markdown or extra text."""
 
     try:
-        chat = LlmChat(
-            api_key=api_key,
-            session_id=f"mirobridge-{uuid.uuid4()}",
-            system_message="You are a premium presentation designer that creates editorial-style, magazine-quality slide content. Always respond with valid JSON only."
-        ).with_model("anthropic", "claude-sonnet-4-5-20250929")
+        anthropic_client = AsyncAnthropic(api_key=api_key)
         
-        user_message = UserMessage(text=prompt)
-        response = await chat.send_message(user_message)
+        response = await anthropic_client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=1000,
+            system="You are a premium presentation designer that creates editorial-style, magazine-quality slide content. Always respond with valid JSON only.",
+            messages=[
+                {"role": "user", "content": prompt}
+            ]
+        )
+        
+        # Extract text from response
+        response_text = response.content[0].text
         
         # Parse the JSON response
-        clean_response = response.strip()
+        clean_response = response_text.strip()
         if clean_response.startswith("```"):
             clean_response = clean_response.split("\n", 1)[1]
         if clean_response.endswith("```"):
@@ -573,9 +592,9 @@ Respond ONLY with valid JSON, no markdown or extra text."""
 @api_router.post("/summarize-all")
 async def summarize_all_frames():
     """Summarize all frames in the board (including empty frames)"""
-    api_key = os.environ.get('EMERGENT_LLM_KEY')
+    api_key = os.environ.get('ANTHROPIC_API_KEY')
     if not api_key:
-        raise HTTPException(status_code=500, detail="EMERGENT_LLM_KEY not configured")
+        raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY not configured")
     
     frame_notes = map_notes_to_frames(MOCK_MIRO_BOARD.frames, MOCK_MIRO_BOARD.sticky_notes)
     
@@ -638,4 +657,5 @@ app.add_middleware(
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
-    client.close()
+    if client:
+        client.close()
