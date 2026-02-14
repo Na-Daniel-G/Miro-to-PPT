@@ -278,12 +278,15 @@ export default function SlidePreview({ slides, template, onSlidesUpdate }) {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Large Preview */}
         <div className="lg:col-span-2">
-          <Card className="overflow-hidden shadow-xl">
+          <Card className={cn(
+            "overflow-hidden shadow-xl",
+            isDarkTheme && "border-slate-700"
+          )}>
             <div 
-              className="p-4"
-              style={{ backgroundColor: `#${slideTemplate.header_color}` }}
+              className="p-6"
+              style={{ backgroundColor: `#${slideTemplate.header_color || slideTemplate.background}` }}
             >
-              <div className="flex items-center gap-2 text-white/80 text-sm">
+              <div className="flex items-center gap-2 text-sm" style={{ color: isDarkTheme ? '#94A3B8' : 'rgba(255,255,255,0.8)' }}>
                 <Presentation className="w-4 h-4" />
                 <span>Slide {activeSlide + 1}</span>
                 {isCurrentEmpty && (
@@ -294,12 +297,16 @@ export default function SlidePreview({ slides, template, onSlidesUpdate }) {
               </div>
               {/* Editable Title */}
               {editingTitle ? (
-                <div className="flex items-center gap-2 mt-2">
+                <div className="flex items-center gap-2 mt-3">
                   <Input
                     data-testid="edit-title-input"
                     value={editValue}
                     onChange={(e) => setEditValue(e.target.value)}
-                    className="bg-white/20 border-white/30 text-white placeholder:text-white/50 text-xl font-bold"
+                    className={cn(
+                      "border-white/30 text-2xl font-bold",
+                      isDarkTheme ? "bg-slate-800/50 text-white placeholder:text-slate-400" : "bg-white/20 text-white placeholder:text-white/50"
+                    )}
+                    style={{ fontFamily: slideTemplate.fonts?.title || 'Manrope' }}
                     autoFocus
                     onKeyDown={(e) => {
                       if (e.key === "Enter") saveTitle();
@@ -314,10 +321,13 @@ export default function SlidePreview({ slides, template, onSlidesUpdate }) {
                   </Button>
                 </div>
               ) : (
-                <div className="flex items-center gap-2 mt-2 group">
+                <div className="flex items-center gap-2 mt-3 group">
                   <h2 
-                    className="text-2xl font-bold flex-1"
-                    style={{ color: `#${slideTemplate.title_color}`, fontFamily: 'Manrope' }}
+                    className="text-3xl font-bold flex-1 leading-tight"
+                    style={{ 
+                      color: `#${slideTemplate.title_color}`, 
+                      fontFamily: slideTemplate.fonts?.title || 'Playfair Display'
+                    }}
                   >
                     {currentSlide.slide.title}
                   </h2>
@@ -332,88 +342,116 @@ export default function SlidePreview({ slides, template, onSlidesUpdate }) {
                   </Button>
                 </div>
               )}
+              {/* Accent line for Modern Midnight */}
+              {isDarkTheme && (
+                <div 
+                  className="w-16 h-1 mt-4 rounded"
+                  style={{ backgroundColor: `#${slideTemplate.accent_color}` }}
+                />
+              )}
             </div>
-            <CardContent className="p-8 bg-white min-h-[350px]">
+            <CardContent 
+              className="p-8 min-h-[350px]"
+              style={{ backgroundColor: isDarkTheme ? `#${slideTemplate.background}` : 'white' }}
+            >
               {/* Editable Bullets */}
-              <ul className="space-y-4">
-                {currentSlide.slide.bullets.map((bullet, i) => (
-                  <li 
-                    key={i} 
-                    className="flex items-start gap-4 text-lg group"
-                    style={{ color: `#${slideTemplate.bullet_color}` }}
-                  >
-                    <span 
-                      className="w-2 h-2 rounded-full mt-3 flex-shrink-0"
-                      style={{ backgroundColor: `#${slideTemplate.accent_color}` }}
-                    />
-                    {editingBulletIndex === i ? (
-                      <div className="flex-1 flex items-center gap-2">
-                        <Textarea
-                          data-testid={`edit-bullet-input-${i}`}
-                          value={editValue}
-                          onChange={(e) => setEditValue(e.target.value)}
-                          className="flex-1 min-h-[60px] text-lg"
-                          autoFocus
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter" && !e.shiftKey) {
-                              e.preventDefault();
-                              saveBullet();
-                            }
-                            if (e.key === "Escape") cancelEdit();
-                          }}
+              <ul className="space-y-5">
+                {currentSlide.slide.bullets.map((bullet, i) => {
+                  const isInsight = bullet.startsWith('✦');
+                  return (
+                    <li 
+                      key={i} 
+                      className={cn(
+                        "flex items-start gap-4 text-lg group",
+                        isInsight && "mt-6 pt-4 border-t",
+                        isInsight && isDarkTheme && "border-slate-700"
+                      )}
+                      style={{ 
+                        color: isInsight ? `#${slideTemplate.accent_color}` : `#${slideTemplate.bullet_color}`,
+                        fontFamily: slideTemplate.fonts?.body || 'Inter'
+                      }}
+                    >
+                      {!isInsight && (
+                        <span 
+                          className="w-2 h-2 rounded-full mt-3 flex-shrink-0"
+                          style={{ backgroundColor: `#${slideTemplate.accent_color}` }}
                         />
-                        <div className="flex flex-col gap-1">
-                          <Button size="icon" variant="ghost" onClick={saveBullet} className="h-8 w-8">
-                            <Check className="w-4 h-4 text-green-600" />
-                          </Button>
-                          <Button size="icon" variant="ghost" onClick={cancelEdit} className="h-8 w-8">
-                            <X className="w-4 h-4 text-red-500" />
-                          </Button>
+                      )}
+                      {editingBulletIndex === i ? (
+                        <div className="flex-1 flex items-center gap-2">
+                          <Textarea
+                            data-testid={`edit-bullet-input-${i}`}
+                            value={editValue}
+                            onChange={(e) => setEditValue(e.target.value)}
+                            className={cn(
+                              "flex-1 min-h-[60px] text-lg",
+                              isDarkTheme && "bg-slate-800 border-slate-600 text-white"
+                            )}
+                            autoFocus
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" && !e.shiftKey) {
+                                e.preventDefault();
+                                saveBullet();
+                              }
+                              if (e.key === "Escape") cancelEdit();
+                            }}
+                          />
+                          <div className="flex flex-col gap-1">
+                            <Button size="icon" variant="ghost" onClick={saveBullet} className="h-8 w-8">
+                              <Check className="w-4 h-4 text-green-500" />
+                            </Button>
+                            <Button size="icon" variant="ghost" onClick={cancelEdit} className="h-8 w-8">
+                              <X className="w-4 h-4 text-red-500" />
+                            </Button>
+                          </div>
                         </div>
-                      </div>
-                    ) : (
-                      <>
-                        <span className="flex-1">{bullet}</span>
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Button 
-                            data-testid={`edit-bullet-btn-${i}`}
-                            size="icon" 
-                            variant="ghost" 
-                            onClick={() => startEditBullet(i)}
-                            className="h-8 w-8"
-                          >
-                            <Pencil className="w-4 h-4 text-slate-400 hover:text-slate-600" />
-                          </Button>
-                          {currentSlide.slide.bullets.length > 1 && (
+                      ) : (
+                        <>
+                          <span className={cn("flex-1", isInsight && "italic")}>{bullet}</span>
+                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                             <Button 
-                              data-testid={`delete-bullet-btn-${i}`}
+                              data-testid={`edit-bullet-btn-${i}`}
                               size="icon" 
                               variant="ghost" 
-                              onClick={() => deleteBullet(i)}
+                              onClick={() => startEditBullet(i)}
                               className="h-8 w-8"
                             >
-                              <Trash2 className="w-4 h-4 text-slate-400 hover:text-red-500" />
+                              <Pencil className={cn("w-4 h-4", isDarkTheme ? "text-slate-500 hover:text-white" : "text-slate-400 hover:text-slate-600")} />
                             </Button>
-                          )}
-                        </div>
-                      </>
-                    )}
-                  </li>
-                ))}
+                            {currentSlide.slide.bullets.length > 1 && (
+                              <Button 
+                                data-testid={`delete-bullet-btn-${i}`}
+                                size="icon" 
+                                variant="ghost" 
+                                onClick={() => deleteBullet(i)}
+                                className="h-8 w-8"
+                              >
+                                <Trash2 className={cn("w-4 h-4", isDarkTheme ? "text-slate-500 hover:text-red-400" : "text-slate-400 hover:text-red-500")} />
+                              </Button>
+                            )}
+                          </div>
+                        </>
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
               {/* Add Bullet Button */}
               <Button
                 data-testid="add-bullet-btn"
                 variant="ghost"
                 onClick={addBullet}
-                className="mt-4 text-slate-400 hover:text-slate-600 gap-2"
+                className={cn(
+                  "mt-6 gap-2",
+                  isDarkTheme ? "text-slate-500 hover:text-slate-300" : "text-slate-400 hover:text-slate-600"
+                )}
               >
                 <Plus className="w-4 h-4" />
                 Add bullet point
               </Button>
             </CardContent>
             <div 
-              className="h-2" 
+              className="h-1" 
               style={{ backgroundColor: `#${slideTemplate.accent_color}` }}
             />
           </Card>
