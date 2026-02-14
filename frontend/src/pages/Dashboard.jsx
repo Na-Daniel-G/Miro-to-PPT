@@ -469,6 +469,17 @@ export default function Dashboard() {
             </div>
             
             <div className="flex items-center gap-3">
+              {/* Help Button */}
+              <Button
+                data-testid="help-btn"
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowGettingStarted(true)}
+                className="text-slate-500 hover:text-slate-700"
+              >
+                <HelpCircle className="w-5 h-5" />
+              </Button>
+              
               {/* Miro Connection Status */}
               {miroStatus.configured && (
                 miroStatus.connected ? (
