@@ -189,7 +189,12 @@ async def miro_auth(redirect_url: str = Query(None)):
         raise HTTPException(status_code=500, detail="Miro OAuth not configured")
     
     # Store the frontend URL to redirect back to after OAuth
-    state = redirect_url or ""
+    # Use provided redirect_url, or FRONTEND_URL env var, or empty
+    frontend_redirect = redirect_url or FRONTEND_URL or ""
+    
+    # URL encode the state to preserve it through OAuth
+    import urllib.parse
+    state = urllib.parse.quote(frontend_redirect, safe='')
     
     auth_url = (
         f"{MIRO_AUTH_URL}?"
@@ -199,20 +204,32 @@ async def miro_auth(redirect_url: str = Query(None)):
         f"scope=boards:read&"
         f"state={state}"
     )
+    logger.info(f"OAuth redirect URL stored in state: {frontend_redirect}")
     return RedirectResponse(url=auth_url)
 
 @miro_router.get("/callback")
 async def miro_callback(code: str = Query(None), error: str = Query(None), state: str = Query("")):
     """Handle OAuth callback from Miro"""
-    # Determine where to redirect the user (frontend URL)
-    frontend_url = state if state and state.startswith("http") else "/"
+    import urllib.parse
+    
+    # Decode the frontend URL from state
+    frontend_url = urllib.parse.unquote(state) if state else ""
+    logger.info(f"OAuth callback - state decoded to: {frontend_url}")
+    
+    # Determine final redirect destination
+    if frontend_url and frontend_url.startswith("http"):
+        base_redirect = frontend_url
+    elif FRONTEND_URL and FRONTEND_URL.startswith("http"):
+        base_redirect = FRONTEND_URL
+    else:
+        base_redirect = ""
     
     if error:
-        redirect_target = f"{frontend_url}?miro_error={error}" if frontend_url != "/" else f"/?miro_error={error}"
+        redirect_target = f"{base_redirect}?miro_error={error}" if base_redirect else f"/?miro_error={error}"
         return RedirectResponse(url=redirect_target)
     
     if not code:
-        redirect_target = f"{frontend_url}?miro_error=no_code" if frontend_url != "/" else "/?miro_error=no_code"
+        redirect_target = f"{base_redirect}?miro_error=no_code" if base_redirect else "/?miro_error=no_code"
         return RedirectResponse(url=redirect_target)
     
     try:
@@ -230,19 +247,19 @@ async def miro_callback(code: str = Query(None), error: str = Query(None), state
             response.raise_for_status()
             token_data = response.json()
             
-            # Store token (in production, use secure storage with user ID)
+            # Store token
             token_store["default"] = {
                 "access_token": token_data.get("access_token"),
                 "refresh_token": token_data.get("refresh_token"),
                 "expires_at": datetime.now(timezone.utc).isoformat()
             }
             
-            logger.info("Miro OAuth successful")
-            redirect_target = f"{frontend_url}?miro_connected=true" if frontend_url != "/" else "/?miro_connected=true"
+            logger.info(f"Miro OAuth successful, redirecting to: {base_redirect}")
+            redirect_target = f"{base_redirect}?miro_connected=true" if base_redirect else "/?miro_connected=true"
             return RedirectResponse(url=redirect_target)
     except Exception as e:
         logger.error(f"Miro OAuth error: {str(e)}")
-        redirect_target = f"{frontend_url}?miro_error=token_exchange_failed" if frontend_url != "/" else "/?miro_error=token_exchange_failed"
+        redirect_target = f"{base_redirect}?miro_error=token_exchange_failed" if base_redirect else "/?miro_error=token_exchange_failed"
         return RedirectResponse(url=redirect_target)
 
 @miro_router.get("/status")
