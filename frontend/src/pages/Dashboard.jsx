@@ -435,6 +435,23 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-slate-50">
+      {/* Getting Started Banner */}
+      <GettingStartedBanner 
+        isConnected={miroStatus.connected}
+        onLearnMore={() => setShowGettingStarted(true)}
+        onConnect={connectMiro}
+      />
+      
+      {/* Getting Started Modal */}
+      <GettingStartedModal
+        open={showGettingStarted}
+        onOpenChange={setShowGettingStarted}
+        onConnect={() => {
+          setShowGettingStarted(false);
+          connectMiro();
+        }}
+      />
+
       {/* Header */}
       <header className="glass-header sticky top-0 z-50 border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
