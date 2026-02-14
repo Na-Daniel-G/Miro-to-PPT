@@ -525,7 +525,11 @@ async def summarize_frame_content(request: SummarizeRequest):
     """Use AI to summarize sticky note content into premium editorial slide format"""
     api_key = os.environ.get('ANTHROPIC_API_KEY')
     if not api_key:
-        raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY not configured")
+        logger.warning("ANTHROPIC_API_KEY not configured, returning basic summary")
+        return SlideContent(
+            title=request.frame_title,
+            bullets=request.notes[:5]
+        )
     
     notes_text = "\n".join([f"- {note}" for note in request.notes])
     
@@ -594,7 +598,7 @@ async def summarize_all_frames():
     """Summarize all frames in the board (including empty frames)"""
     api_key = os.environ.get('ANTHROPIC_API_KEY')
     if not api_key:
-        raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY not configured")
+        logger.warning("ANTHROPIC_API_KEY not configured, using basic summaries")
     
     frame_notes = map_notes_to_frames(MOCK_MIRO_BOARD.frames, MOCK_MIRO_BOARD.sticky_notes)
     
@@ -655,7 +659,23 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.on_event("startup")
+async def startup_event():
+    logger.info("=" * 50)
+    logger.info("APPLICATION STARTING UP")
+    logger.info(f"ANTHROPIC_API_KEY present: {bool(os.environ.get('ANTHROPIC_API_KEY'))}")
+    logger.info(f"FRONTEND_URL: {os.environ.get('FRONTEND_URL', 'Not set')}")
+    logger.info(f"CORS_ORIGINS: {os.environ.get('CORS_ORIGINS', 'Not set')}")
+    logger.info(f"MongoDB connected: {db is not None}")
+    logger.info("=" * 50)
+
 @app.on_event("shutdown")
 async def shutdown_db_client():
+    logger.info("APPLICATION SHUTTING DOWN")
     if client:
         client.close()
+
+if __name__ == "__main__":
+    import uvicorn
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
