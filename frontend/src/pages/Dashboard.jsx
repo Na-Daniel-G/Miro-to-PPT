@@ -143,7 +143,7 @@ export default function Dashboard() {
   // Getting Started modal state
   const [showGettingStarted, setShowGettingStarted] = useState(false);
   
-  const currentTemplate = selectedTemplate === "midnight" ? MODERN_MIDNIGHT_TEMPLATE : PROFESSIONAL_TEMPLATE;
+  const currentTemplate = ALL_TEMPLATES[selectedTemplate] || MODERN_MIDNIGHT_TEMPLATE;
 
   useEffect(() => {
     // Load export history from localStorage
