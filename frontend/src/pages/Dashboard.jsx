@@ -49,6 +49,22 @@ const PROFESSIONAL_TEMPLATE = {
   background: "FFFFFF"
 };
 
+// Modern Midnight Premium template
+const MODERN_MIDNIGHT_TEMPLATE = {
+  name: "Modern Midnight",
+  header_color: "0F172A",
+  accent_color: "F59E0B",
+  title_color: "F8FAFC",
+  body_color: "0F172A",
+  bullet_color: "94A3B8",
+  divider_color: "1E293B",
+  background: "0F172A",
+  fonts: {
+    title: "Playfair Display",
+    body: "Inter"
+  }
+};
+
 export default function Dashboard() {
   const [boardData, setBoardData] = useState(null);
   const [mappedData, setMappedData] = useState(null);
