@@ -153,6 +153,7 @@ export default function SlidePreview({ slides, template, onSlidesUpdate }) {
 
   const currentSlide = slides[activeSlide];
   const isCurrentEmpty = currentSlide.is_empty_frame || currentSlide.raw_notes?.length === 0;
+  const isDarkTheme = slideTemplate.background === "0F172A";
 
   // Edit handlers
   const startEditTitle = () => {
