@@ -711,11 +711,41 @@ export default function Dashboard() {
 
             <TabsContent value="preview" className="space-y-6">
               {generatedSlides.length > 0 ? (
-                <SlidePreview 
-                  slides={generatedSlides} 
-                  template={PROFESSIONAL_TEMPLATE}
-                  onSlidesUpdate={setGeneratedSlides}
-                />
+                <>
+                  {/* Template Selector */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm font-medium text-slate-700">Theme:</span>
+                      <div className="flex gap-2">
+                        <Button
+                          data-testid="template-midnight"
+                          variant={selectedTemplate === "midnight" ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setSelectedTemplate("midnight")}
+                          className={selectedTemplate === "midnight" ? "bg-slate-900 hover:bg-slate-800" : ""}
+                        >
+                          <span className="w-3 h-3 rounded-full bg-amber-500 mr-2" />
+                          Modern Midnight
+                        </Button>
+                        <Button
+                          data-testid="template-professional"
+                          variant={selectedTemplate === "professional" ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setSelectedTemplate("professional")}
+                          className={selectedTemplate === "professional" ? "bg-indigo-600 hover:bg-indigo-700" : ""}
+                        >
+                          <span className="w-3 h-3 rounded-full bg-blue-500 mr-2" />
+                          Professional
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                  <SlidePreview 
+                    slides={generatedSlides} 
+                    template={currentTemplate}
+                    onSlidesUpdate={setGeneratedSlides}
+                  />
+                </>
               ) : (
                 <Card className="border-dashed border-2 border-slate-200 bg-slate-50/50">
                   <CardContent className="flex flex-col items-center justify-center py-16">
