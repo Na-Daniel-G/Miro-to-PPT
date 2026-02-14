@@ -65,6 +65,59 @@ const MODERN_MIDNIGHT_TEMPLATE = {
   }
 };
 
+// Company/Corporate template
+const COMPANY_TEMPLATE = {
+  name: "Corporate",
+  header_color: "1F2937",
+  accent_color: "DC2626",
+  title_color: "FFFFFF",
+  body_color: "FFFFFF",
+  bullet_color: "374151",
+  background: "F9FAFB",
+  fonts: {
+    title: "Inter",
+    body: "Inter"
+  }
+};
+
+// Academic template
+const ACADEMIC_TEMPLATE = {
+  name: "Academic",
+  header_color: "1E3A8A",
+  accent_color: "1E3A8A",
+  title_color: "FFFFFF",
+  body_color: "FFFFFF",
+  bullet_color: "1F2937",
+  background: "FFFFFF",
+  fonts: {
+    title: "Playfair Display",
+    body: "Inter"
+  }
+};
+
+// Minimalist template
+const MINIMALIST_TEMPLATE = {
+  name: "Minimalist",
+  header_color: "FFFFFF",
+  accent_color: "000000",
+  title_color: "000000",
+  body_color: "FFFFFF",
+  bullet_color: "525252",
+  background: "FFFFFF",
+  fonts: {
+    title: "Inter",
+    body: "Inter"
+  }
+};
+
+const ALL_TEMPLATES = {
+  midnight: MODERN_MIDNIGHT_TEMPLATE,
+  professional: PROFESSIONAL_TEMPLATE,
+  corporate: COMPANY_TEMPLATE,
+  academic: ACADEMIC_TEMPLATE,
+  minimalist: MINIMALIST_TEMPLATE
+};
+
 export default function Dashboard() {
   const [boardData, setBoardData] = useState(null);
   const [mappedData, setMappedData] = useState(null);
@@ -90,7 +143,7 @@ export default function Dashboard() {
   // Getting Started modal state
   const [showGettingStarted, setShowGettingStarted] = useState(false);
   
-  const currentTemplate = selectedTemplate === "midnight" ? MODERN_MIDNIGHT_TEMPLATE : PROFESSIONAL_TEMPLATE;
+  const currentTemplate = ALL_TEMPLATES[selectedTemplate] || MODERN_MIDNIGHT_TEMPLATE;
 
   useEffect(() => {
     // Load export history from localStorage
@@ -727,10 +780,10 @@ export default function Dashboard() {
               {generatedSlides.length > 0 ? (
                 <>
                   {/* Template Selector */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-between flex-wrap gap-3">
+                    <div className="flex items-center gap-3 flex-wrap">
                       <span className="text-sm font-medium text-slate-700">Theme:</span>
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 flex-wrap">
                         <Button
                           data-testid="template-midnight"
                           variant={selectedTemplate === "midnight" ? "default" : "outline"}
@@ -739,17 +792,47 @@ export default function Dashboard() {
                           className={selectedTemplate === "midnight" ? "bg-slate-900 hover:bg-slate-800" : ""}
                         >
                           <span className="w-3 h-3 rounded-full bg-amber-500 mr-2" />
-                          Modern Midnight
+                          Midnight
                         </Button>
                         <Button
                           data-testid="template-professional"
                           variant={selectedTemplate === "professional" ? "default" : "outline"}
                           size="sm"
                           onClick={() => setSelectedTemplate("professional")}
-                          className={selectedTemplate === "professional" ? "bg-indigo-600 hover:bg-indigo-700" : ""}
+                          className={selectedTemplate === "professional" ? "bg-blue-600 hover:bg-blue-700" : ""}
                         >
                           <span className="w-3 h-3 rounded-full bg-blue-500 mr-2" />
                           Professional
+                        </Button>
+                        <Button
+                          data-testid="template-corporate"
+                          variant={selectedTemplate === "corporate" ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setSelectedTemplate("corporate")}
+                          className={selectedTemplate === "corporate" ? "bg-gray-700 hover:bg-gray-800" : ""}
+                        >
+                          <span className="w-3 h-3 rounded-full bg-red-600 mr-2" />
+                          Corporate
+                        </Button>
+                        <Button
+                          data-testid="template-academic"
+                          variant={selectedTemplate === "academic" ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setSelectedTemplate("academic")}
+                          className={selectedTemplate === "academic" ? "bg-blue-900 hover:bg-blue-950" : ""}
+                        >
+                          <span className="w-3 h-3 rounded-full bg-blue-900 mr-2" />
+                          Academic
+                        </Button>
+                        <Button
+                          data-testid="template-minimalist"
+                          variant={selectedTemplate === "minimalist" ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setSelectedTemplate("minimalist")}
+                          className={selectedTemplate === "minimalist" ? "bg-black hover:bg-gray-900" : ""}
+                        >
+                          <span className="w-3 h-3 rounded-full bg-black mr-2 border border-gray-300" />
+                          Minimalist
                         </Button>
                       </div>
                     </div>
