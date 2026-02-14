@@ -342,75 +342,89 @@ export default function Dashboard() {
     }
 
     try {
-      const template = PROFESSIONAL_TEMPLATE;
+      const template = currentTemplate;
+      const isDark = template.background === "0F172A";
       const pptx = new pptxgen();
       pptx.author = "MiroBridge";
       pptx.title = boardData?.name || "Miro Board Export";
       pptx.subject = "AI-Generated Presentation from Miro";
       
-      // Define Professional slide master with dark blue header
+      // Define slide master based on selected template
       pptx.defineSlideMaster({
-        title: "PROFESSIONAL",
+        title: template.name.toUpperCase().replace(" ", "_"),
         background: { color: template.background },
         objects: [
-          // Dark blue header bar
-          { rect: { x: 0, y: 0, w: "100%", h: "15%", fill: { color: template.header_color } } },
           // Bottom accent line
-          { rect: { x: 0, y: "95%", w: "100%", h: "5%", fill: { color: template.accent_color } } },
+          { rect: { x: 0, y: "97%", w: "100%", h: "3%", fill: { color: template.accent_color } } },
           // Footer text
           { text: { 
             text: "MiroBridge Export", 
             options: { 
               x: 0.5, 
-              y: "96%", 
+              y: "97.5%", 
               w: 3, 
-              h: 0.3, 
-              fontSize: 9, 
-              color: "FFFFFF", 
-              fontFace: "Arial" 
+              h: 0.25, 
+              fontSize: 8, 
+              color: isDark ? "94A3B8" : "FFFFFF", 
+              fontFace: template.fonts?.body || "Arial" 
             } 
           }}
         ]
       });
 
       generatedSlides.forEach((slideData, index) => {
-        const slide = pptx.addSlide({ masterName: "PROFESSIONAL" });
+        const slide = pptx.addSlide({ masterName: template.name.toUpperCase().replace(" ", "_") });
         const isEmptyFrame = slideData.is_empty_frame || slideData.raw_notes?.length === 0;
         
-        // Add title in header area
+        // Add title
         slide.addText(slideData.slide.title, {
           x: 0.5,
-          y: 0.3,
+          y: 0.5,
           w: 9,
-          h: 0.8,
-          fontSize: 28,
-          fontFace: "Arial",
+          h: 1.2,
+          fontSize: 36,
+          fontFace: template.fonts?.title || "Arial",
           color: template.title_color,
           bold: true
         });
         
-        // Add bullets in body area
-        const bulletText = slideData.slide.bullets.map(bullet => ({
-          text: bullet,
-          options: { 
-            bullet: { type: "bullet", color: template.accent_color }, 
-            fontSize: 18, 
-            color: template.bullet_color, 
-            breakLine: true,
-            paraSpaceAfter: 12
-          }
-        }));
+        // Add accent line for dark theme
+        if (isDark) {
+          slide.addShape("rect", {
+            x: 0.5,
+            y: 1.7,
+            w: 1,
+            h: 0.08,
+            fill: { color: template.accent_color }
+          });
+        }
+        
+        // Add bullets
+        const bulletText = slideData.slide.bullets.map(bullet => {
+          const isInsight = bullet.startsWith('✦');
+          return {
+            text: bullet,
+            options: { 
+              bullet: isInsight ? false : { type: "bullet", color: template.accent_color }, 
+              fontSize: 18, 
+              color: isInsight ? template.accent_color : template.bullet_color, 
+              breakLine: true,
+              paraSpaceAfter: 14,
+              italic: isInsight
+            }
+          };
+        });
         
         slide.addText(bulletText, {
           x: 0.5,
-          y: 1.5,
+          y: isDark ? 2.0 : 1.8,
           w: 9,
           h: 4,
-          fontFace: "Arial",
+          fontFace: template.fonts?.body || "Arial",
           valign: "top"
         });
         
-        // Add speaker notes (only if there are original notes)
+        // Add speaker notes
         if (!isEmptyFrame && slideData.raw_notes?.length > 0) {
           const speakerNotes = `Original Sticky Notes from "${slideData.frame_title}":\n\n${slideData.raw_notes.map((note, i) => `${i + 1}. ${note}`).join("\n")}`;
           slide.addNotes(speakerNotes);
@@ -436,7 +450,7 @@ export default function Dashboard() {
         id: Date.now().toString(),
         board_name: boardData?.name || "Untitled Board",
         slide_count: generatedSlides.length,
-        template: "Professional",
+        template: template.name,
         exported_at: new Date().toISOString()
       };
       saveExportHistory(exportRecord);
