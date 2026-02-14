@@ -180,29 +180,37 @@ def map_notes_to_frames(frames: List[Frame], notes: List[StickyNote]) -> dict:
 # ==================== MIRO OAUTH ENDPOINTS ====================
 
 @miro_router.get("/auth")
-async def miro_auth():
+async def miro_auth(redirect_url: str = Query(None)):
     """Redirect user to Miro OAuth authorization"""
     if not MIRO_CLIENT_ID:
         raise HTTPException(status_code=500, detail="Miro OAuth not configured")
+    
+    # Store the frontend URL to redirect back to after OAuth
+    state = redirect_url or ""
     
     auth_url = (
         f"{MIRO_AUTH_URL}?"
         f"response_type=code&"
         f"client_id={MIRO_CLIENT_ID}&"
         f"redirect_uri={MIRO_REDIRECT_URI}&"
-        f"scope=boards:read"
+        f"scope=boards:read&"
+        f"state={state}"
     )
     return RedirectResponse(url=auth_url)
 
 @miro_router.get("/callback")
-async def miro_callback(code: str = Query(None), error: str = Query(None)):
+async def miro_callback(code: str = Query(None), error: str = Query(None), state: str = Query("")):
     """Handle OAuth callback from Miro"""
+    # Determine where to redirect the user (frontend URL)
+    frontend_url = state if state and state.startswith("http") else "/"
+    
     if error:
-        # Redirect to frontend with error
-        return RedirectResponse(url=f"/?miro_error={error}")
+        redirect_target = f"{frontend_url}?miro_error={error}" if frontend_url != "/" else f"/?miro_error={error}"
+        return RedirectResponse(url=redirect_target)
     
     if not code:
-        return RedirectResponse(url="/?miro_error=no_code")
+        redirect_target = f"{frontend_url}?miro_error=no_code" if frontend_url != "/" else "/?miro_error=no_code"
+        return RedirectResponse(url=redirect_target)
     
     try:
         async with httpx.AsyncClient() as http_client:
@@ -227,10 +235,12 @@ async def miro_callback(code: str = Query(None), error: str = Query(None)):
             }
             
             logger.info("Miro OAuth successful")
-            return RedirectResponse(url="/?miro_connected=true")
+            redirect_target = f"{frontend_url}?miro_connected=true" if frontend_url != "/" else "/?miro_connected=true"
+            return RedirectResponse(url=redirect_target)
     except Exception as e:
         logger.error(f"Miro OAuth error: {str(e)}")
-        return RedirectResponse(url=f"/?miro_error=token_exchange_failed")
+        redirect_target = f"{frontend_url}?miro_error=token_exchange_failed" if frontend_url != "/" else "/?miro_error=token_exchange_failed"
+        return RedirectResponse(url=redirect_target)
 
 @miro_router.get("/status")
 async def miro_status():
