@@ -27,10 +27,12 @@ import {
   Unlink,
   History,
   Trash2,
-  ExternalLink
+  ExternalLink,
+  HelpCircle
 } from "lucide-react";
 import MiroBoard from "@/components/MiroBoard";
 import SlidePreview from "@/components/SlidePreview";
+import { GettingStartedModal, GettingStartedBanner } from "@/components/GettingStarted";
 import pptxgen from "pptxgenjs";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
