@@ -84,8 +84,13 @@ export default function Dashboard() {
   // Export history state
   const [exportHistory, setExportHistory] = useState([]);
   
+  // Template selection
+  const [selectedTemplate, setSelectedTemplate] = useState("midnight");
+  
   // Getting Started modal state
   const [showGettingStarted, setShowGettingStarted] = useState(false);
+  
+  const currentTemplate = selectedTemplate === "midnight" ? MODERN_MIDNIGHT_TEMPLATE : PROFESSIONAL_TEMPLATE;
 
   useEffect(() => {
     // Load export history from localStorage
