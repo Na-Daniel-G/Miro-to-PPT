@@ -12,6 +12,7 @@ import uuid
 from datetime import datetime, timezone
 import httpx
 import json
+from openai import AsyncOpenAI
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -522,9 +523,9 @@ async def get_templates():
 @api_router.post("/summarize", response_model=SlideContent)
 async def summarize_frame_content(request: SummarizeRequest):
     """Use AI to summarize sticky note content into premium editorial slide format"""
-    api_key = os.environ.get('GEMINI_API_KEY')
+    api_key = os.environ.get('OPENAI_API_KEY')
     if not api_key:
-        logger.warning("GEMINI_API_KEY not configured, returning basic summary")
+        logger.warning("OPENAI_API_KEY not configured, returning basic summary")
         return SlideContent(
             title=request.frame_title,
             bullets=request.notes[:5]
@@ -552,24 +553,19 @@ Requirements:
 Respond ONLY with valid JSON, no markdown or extra text."""
 
     try:
-        # Use REST API directly instead of SDK
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={api_key}"
+        client = AsyncOpenAI(api_key=api_key)
         
-        payload = {
-            "contents": [{
-                "parts": [{
-                    "text": prompt
-                }]
-            }]
-        }
+        response = await client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "You are a premium presentation designer that creates editorial-style, magazine-quality slide content. Always respond with valid JSON only."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.7,
+            max_tokens=500
+        )
         
-        async with httpx.AsyncClient() as client:
-            response = await client.post(url, json=payload, timeout=30.0)
-            response.raise_for_status()
-            data = response.json()
-        
-        # Extract text from Gemini response
-        response_text = data['candidates'][0]['content']['parts'][0]['text']
+        response_text = response.choices[0].message.content
         
         # Parse the JSON response
         clean_response = response_text.strip()
@@ -600,9 +596,9 @@ Respond ONLY with valid JSON, no markdown or extra text."""
 @api_router.post("/summarize-all")
 async def summarize_all_frames():
     """Summarize all frames in the board (including empty frames)"""
-    api_key = os.environ.get('GEMINI_API_KEY')
+    api_key = os.environ.get('OPENAI_API_KEY')
     if not api_key:
-        logger.warning("GEMINI_API_KEY not configured, using basic summaries")
+        logger.warning("OPENAI_API_KEY not configured, using basic summaries")
     
     frame_notes = map_notes_to_frames(MOCK_MIRO_BOARD.frames, MOCK_MIRO_BOARD.sticky_notes)
     
@@ -667,7 +663,7 @@ app.add_middleware(
 async def startup_event():
     logger.info("=" * 50)
     logger.info("APPLICATION STARTING UP")
-    logger.info(f"GEMINI_API_KEY present: {bool(os.environ.get('GEMINI_API_KEY'))}")
+    logger.info(f"OPENAI_API_KEY present: {bool(os.environ.get('OPENAI_API_KEY'))}")
     logger.info(f"FRONTEND_URL: {os.environ.get('FRONTEND_URL', 'Not set')}")
     logger.info(f"CORS_ORIGINS: {os.environ.get('CORS_ORIGINS', 'Not set')}")
     logger.info(f"MongoDB connected: {db is not None}")
@@ -682,4 +678,4 @@ async def shutdown_db_client():
 if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))
-    uvicorn.run(app, host="0.0.0.0", port=port)   
+    uvicorn.run(app, host="0.0.0.0", port=port) 
