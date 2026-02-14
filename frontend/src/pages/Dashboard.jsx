@@ -65,6 +65,59 @@ const MODERN_MIDNIGHT_TEMPLATE = {
   }
 };
 
+// Company/Corporate template
+const COMPANY_TEMPLATE = {
+  name: "Corporate",
+  header_color: "1F2937",
+  accent_color: "DC2626",
+  title_color: "FFFFFF",
+  body_color: "FFFFFF",
+  bullet_color: "374151",
+  background: "F9FAFB",
+  fonts: {
+    title: "Inter",
+    body: "Inter"
+  }
+};
+
+// Academic template
+const ACADEMIC_TEMPLATE = {
+  name: "Academic",
+  header_color: "1E3A8A",
+  accent_color: "1E3A8A",
+  title_color: "FFFFFF",
+  body_color: "FFFFFF",
+  bullet_color: "1F2937",
+  background: "FFFFFF",
+  fonts: {
+    title: "Playfair Display",
+    body: "Inter"
+  }
+};
+
+// Minimalist template
+const MINIMALIST_TEMPLATE = {
+  name: "Minimalist",
+  header_color: "FFFFFF",
+  accent_color: "000000",
+  title_color: "000000",
+  body_color: "FFFFFF",
+  bullet_color: "525252",
+  background: "FFFFFF",
+  fonts: {
+    title: "Inter",
+    body: "Inter"
+  }
+};
+
+const ALL_TEMPLATES = {
+  midnight: MODERN_MIDNIGHT_TEMPLATE,
+  professional: PROFESSIONAL_TEMPLATE,
+  corporate: COMPANY_TEMPLATE,
+  academic: ACADEMIC_TEMPLATE,
+  minimalist: MINIMALIST_TEMPLATE
+};
+
 export default function Dashboard() {
   const [boardData, setBoardData] = useState(null);
   const [mappedData, setMappedData] = useState(null);
