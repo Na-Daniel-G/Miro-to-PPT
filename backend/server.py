@@ -478,27 +478,29 @@ async def get_templates():
 
 @api_router.post("/summarize", response_model=SlideContent)
 async def summarize_frame_content(request: SummarizeRequest):
-    """Use AI to summarize sticky note content into slide format"""
+    """Use AI to summarize sticky note content into premium editorial slide format"""
     api_key = os.environ.get('EMERGENT_LLM_KEY')
     if not api_key:
         raise HTTPException(status_code=500, detail="EMERGENT_LLM_KEY not configured")
     
     notes_text = "\n".join([f"- {note}" for note in request.notes])
     
-    prompt = f"""You are an expert presentation designer. Analyze the following brainstorm notes from a Miro board frame titled "{request.frame_title}" and create professional slide content.
+    prompt = f"""You are a Digital Product Designer creating premium, editorial-style presentation content. Transform these brainstorm notes from "{request.frame_title}" into curated slide content.
 
 Notes:
 {notes_text}
 
 Return a JSON object with:
-1. "title": A professional, concise headline for this slide (max 10 words)
-2. "bullets": An array of 3-5 action-oriented bullet points summarizing the brainstorm content
+1. "title": An evocative, poetic headline (max 8 words) - think high-end tech landing page meets premium editorial magazine
+2. "bullets": 3-5 concise, impactful bullet points (max 12 words each) - use white space as a design element, avoid corporate clichés
+3. "aspirational_insight": A single inspiring takeaway sentence that captures the essence
 
 Requirements:
-- Title should be punchy and capture the essence
-- Bullets should be concise (max 15 words each)
-- Transform messy brainstorm ideas into clear, professional language
-- Focus on actionable insights
+- Make the content feel CURATED and INTENTIONAL
+- Headlines should be evocative, not generic
+- Bullets should be punchy and memorable
+- Max 30 words total on slide face
+- Transform messy brainstorm into premium editorial content
 
 Respond ONLY with valid JSON, no markdown or extra text."""
 
@@ -506,7 +508,7 @@ Respond ONLY with valid JSON, no markdown or extra text."""
         chat = LlmChat(
             api_key=api_key,
             session_id=f"mirobridge-{uuid.uuid4()}",
-            system_message="You are a presentation expert that converts brainstorm notes into professional slide content. Always respond with valid JSON only."
+            system_message="You are a premium presentation designer that creates editorial-style, magazine-quality slide content. Always respond with valid JSON only."
         ).with_model("anthropic", "claude-sonnet-4-5-20250929")
         
         user_message = UserMessage(text=prompt)
@@ -522,9 +524,14 @@ Respond ONLY with valid JSON, no markdown or extra text."""
         
         result = json.loads(clean_response)
         
+        # Combine bullets with aspirational insight if present
+        bullets = result.get("bullets", request.notes[:5])
+        if result.get("aspirational_insight"):
+            bullets.append(f"✦ {result.get('aspirational_insight')}")
+        
         return SlideContent(
             title=result.get("title", request.frame_title),
-            bullets=result.get("bullets", request.notes[:5])
+            bullets=bullets
         )
     except Exception as e:
         logger.error(f"AI summarization error: {str(e)}")
