@@ -12,7 +12,7 @@ import uuid
 from datetime import datetime, timezone
 import httpx
 import json
-from anthropic import AsyncAnthropic
+import google.generativeai as genai
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -523,9 +523,9 @@ async def get_templates():
 @api_router.post("/summarize", response_model=SlideContent)
 async def summarize_frame_content(request: SummarizeRequest):
     """Use AI to summarize sticky note content into premium editorial slide format"""
-    api_key = os.environ.get('ANTHROPIC_API_KEY')
+    api_key = os.environ.get('GEMINI_API_KEY')
     if not api_key:
-        logger.warning("ANTHROPIC_API_KEY not configured, returning basic summary")
+        logger.warning("GEMINI_API_KEY not configured, returning basic summary")
         return SlideContent(
             title=request.frame_title,
             bullets=request.notes[:5]
@@ -553,27 +553,19 @@ Requirements:
 Respond ONLY with valid JSON, no markdown or extra text."""
 
     try:
-        anthropic_client = AsyncAnthropic(api_key=api_key)
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel('gemini-1.5-flash')
         
-        response = await anthropic_client.messages.create(
-            model="claude-sonnet-4-20250514",
-            max_tokens=1000,
-            system="You are a premium presentation designer that creates editorial-style, magazine-quality slide content. Always respond with valid JSON only.",
-            messages=[
-                {"role": "user", "content": prompt}
-            ]
-        )
-        
-        # Extract text from response
-        response_text = response.content[0].text
+        response = model.generate_content(prompt)
+        response_text = response.text
         
         # Parse the JSON response
         clean_response = response_text.strip()
-        if clean_response.startswith("```"):
+        if clean_response.startswith("```json"):
+            clean_response = clean_response.replace("```json", "").replace("```", "").strip()
+        elif clean_response.startswith("```"):
             clean_response = clean_response.split("\n", 1)[1]
-        if clean_response.endswith("```"):
-            clean_response = clean_response.rsplit("```", 1)[0]
-        clean_response = clean_response.strip()
+            clean_response = clean_response.rsplit("```", 1)[0].strip()
         
         result = json.loads(clean_response)
         
@@ -596,9 +588,9 @@ Respond ONLY with valid JSON, no markdown or extra text."""
 @api_router.post("/summarize-all")
 async def summarize_all_frames():
     """Summarize all frames in the board (including empty frames)"""
-    api_key = os.environ.get('ANTHROPIC_API_KEY')
+    api_key = os.environ.get('GEMINI_API_KEY')
     if not api_key:
-        logger.warning("ANTHROPIC_API_KEY not configured, using basic summaries")
+        logger.warning("GEMINI_API_KEY not configured, using basic summaries")
     
     frame_notes = map_notes_to_frames(MOCK_MIRO_BOARD.frames, MOCK_MIRO_BOARD.sticky_notes)
     
@@ -663,7 +655,7 @@ app.add_middleware(
 async def startup_event():
     logger.info("=" * 50)
     logger.info("APPLICATION STARTING UP")
-    logger.info(f"ANTHROPIC_API_KEY present: {bool(os.environ.get('ANTHROPIC_API_KEY'))}")
+    logger.info(f"GEMINI_API_KEY present: {bool(os.environ.get('GEMINI_API_KEY'))}")
     logger.info(f"FRONTEND_URL: {os.environ.get('FRONTEND_URL', 'Not set')}")
     logger.info(f"CORS_ORIGINS: {os.environ.get('CORS_ORIGINS', 'Not set')}")
     logger.info(f"MongoDB connected: {db is not None}")
