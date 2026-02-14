@@ -44,6 +44,9 @@ MIRO_AUTH_URL = "https://miro.com/oauth/authorize"
 MIRO_TOKEN_URL = "https://api.miro.com/v1/oauth/token"
 MIRO_API_BASE = "https://api.miro.com/v2"
 
+# Frontend URL for OAuth redirect (can be overridden by query param)
+FRONTEND_URL = os.environ.get('FRONTEND_URL', '')
+
 # In-memory token storage (for demo - in production use secure storage)
 token_store: Dict[str, Any] = {}
 
