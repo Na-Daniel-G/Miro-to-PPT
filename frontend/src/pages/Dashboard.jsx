@@ -67,6 +67,9 @@ export default function Dashboard() {
   
   // Export history state
   const [exportHistory, setExportHistory] = useState([]);
+  
+  // Getting Started modal state
+  const [showGettingStarted, setShowGettingStarted] = useState(false);
 
   useEffect(() => {
     // Load export history from localStorage
