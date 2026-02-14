@@ -12,7 +12,6 @@ import uuid
 from datetime import datetime, timezone
 import httpx
 import json
-import google.generativeai as genai
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -553,11 +552,24 @@ Requirements:
 Respond ONLY with valid JSON, no markdown or extra text."""
 
     try:
-        genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-pro')
+        # Use REST API directly instead of SDK
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={api_key}"
         
-        response = model.generate_content(prompt)
-        response_text = response.text
+        payload = {
+            "contents": [{
+                "parts": [{
+                    "text": prompt
+                }]
+            }]
+        }
+        
+        async with httpx.AsyncClient() as client:
+            response = await client.post(url, json=payload, timeout=30.0)
+            response.raise_for_status()
+            data = response.json()
+        
+        # Extract text from Gemini response
+        response_text = data['candidates'][0]['content']['parts'][0]['text']
         
         # Parse the JSON response
         clean_response = response_text.strip()
