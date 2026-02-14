@@ -197,7 +197,9 @@ export default function Dashboard() {
   };
 
   const connectMiro = () => {
-    window.location.href = `${API}/miro/auth`;
+    // Pass current frontend URL so OAuth redirects back here
+    const currentUrl = window.location.origin;
+    window.location.href = `${API}/miro/auth?redirect_url=${encodeURIComponent(currentUrl)}`;
   };
 
   const disconnectMiro = async () => {
