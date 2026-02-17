@@ -12,7 +12,7 @@ import uuid
 from datetime import datetime, timezone
 import httpx
 import json
-from groq import AsyncGroq
+from openai import AsyncOpenAI
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -523,9 +523,9 @@ async def get_templates():
 @api_router.post("/summarize", response_model=SlideContent)
 async def summarize_frame_content(request: SummarizeRequest):
     """Use AI to summarize sticky note content into premium editorial slide format"""
-    api_key = os.environ.get('GROQ_API_KEY')
+    api_key = os.environ.get('OPENAI_API_KEY')
     if not api_key:
-        logger.warning("GROQ_API_KEY not configured, returning basic summary")
+        logger.warning("OPENAI_API_KEY not configured, returning basic summary")
         return SlideContent(
             title=request.frame_title,
             bullets=request.notes[:5]
@@ -553,10 +553,10 @@ Requirements:
 Respond ONLY with valid JSON, no markdown or extra text."""
 
     try:
-        client = AsyncGroq(api_key=api_key)
+        client = AsyncOpenAI(api_key=api_key)
         
         response = await client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": "You are a premium presentation designer that creates editorial-style, magazine-quality slide content. Always respond with valid JSON only."},
                 {"role": "user", "content": prompt}
@@ -596,9 +596,9 @@ Respond ONLY with valid JSON, no markdown or extra text."""
 @api_router.post("/summarize-all")
 async def summarize_all_frames():
     """Summarize all frames in the board (including empty frames)"""
-    api_key = os.environ.get('GROQ_API_KEY')
+    api_key = os.environ.get('OPENAI_API_KEY')
     if not api_key:
-        logger.warning("GROQ_API_KEY not configured, using basic summaries")
+        logger.warning("OPENAI_API_KEY not configured, using basic summaries")
     
     frame_notes = map_notes_to_frames(MOCK_MIRO_BOARD.frames, MOCK_MIRO_BOARD.sticky_notes)
     
@@ -663,7 +663,7 @@ app.add_middleware(
 async def startup_event():
     logger.info("=" * 50)
     logger.info("APPLICATION STARTING UP")
-    logger.info(f"GROQ_API_KEY present: {bool(os.environ.get('GROQ_API_KEY'))}")
+    logger.info(f"OPENAI_API_KEY present: {bool(os.environ.get('OPENAI_API_KEY'))}")
     logger.info(f"FRONTEND_URL: {os.environ.get('FRONTEND_URL', 'Not set')}")
     logger.info(f"CORS_ORIGINS: {os.environ.get('CORS_ORIGINS', 'Not set')}")
     logger.info(f"MongoDB connected: {db is not None}")
