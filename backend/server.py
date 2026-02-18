@@ -279,7 +279,7 @@ async def miro_callback(code: str = Query(None), error: str = Query(None), state
 @miro_router.get("/status")
 async def miro_status():
     """Check Miro connection status"""
-    is_connected = "default" in token_store and token_store["default"].get("access_token")
+    is_connected = "default" in token_store and token_store["default"].get("access_token") 
     return {
         "connected": is_connected,
         "configured": bool(MIRO_CLIENT_ID and MIRO_CLIENT_SECRET)
